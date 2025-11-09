@@ -47,6 +47,21 @@ class RedBlackTree:
             else:
                 curr_node = curr_node.right
         return None
+    
+    # function to search a node which has a value just above the value of interest
+    def search_bound(self, value):
+        curr_node = self.root
+        while curr_node is not None:
+            if value == curr_node.value:
+                return curr_node
+            elif value < curr_node.value:
+                left = curr_node.left
+                if left is None or left.value < value:
+                    return curr_node
+                curr_node = curr_node.left
+            else:
+                curr_node = curr_node.right
+        return curr_node
 
     # function to insert a node in RB Tree, similar to BST insertion
     def insert(self, value):

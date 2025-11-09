@@ -1,8 +1,8 @@
 from Block import BNode
 
 # Class for a list of BNodes
-class SSP:
-    # constructor for the dictionary
+class BMSSP:
+    # constructor for the class
     # N is the number of nodes
     # s is the index of the source node
     def __init__(self, N, s):

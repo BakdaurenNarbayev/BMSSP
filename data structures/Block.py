@@ -53,3 +53,6 @@ class Block:
             if current == self.head:
                 break
         print("(head)")
+
+    def is_empty(self):
+        return self.head is None

@@ -39,7 +39,7 @@ class RedBlackTree:
     # function to search a value in RB Tree
     def search(self, value):
         curr_node = self.root
-        while curr_node is not None:
+        while curr_node:
             if value == curr_node.value:
                 return curr_node
             elif value < curr_node.value:
@@ -51,7 +51,7 @@ class RedBlackTree:
     # function to search a node which has a value just above the value of interest
     def search_bound(self, value):
         curr_node = self.root
-        while curr_node is not None:
+        while curr_node:
             if value == curr_node.value:
                 return curr_node
             elif value < curr_node.value:

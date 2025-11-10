@@ -4,7 +4,8 @@ class BNode:
         self.prev = None
         self.next = None
 
-# CircularDoublyLinkedList implementation of Block
+
+# Circular Doubly Linked List implementation of Block
 class Block:
     def __init__(self):
         self.head = None
@@ -12,6 +13,9 @@ class Block:
 
     def insert(self, node):
         """Insert a node at the end."""
+        if node is None:
+            return
+
         self.size += 1
 
         if self.head is None:
@@ -29,12 +33,11 @@ class Block:
         """Delete a node by reference."""
         if self.head is None or node is None:
             return
-        
-        self.size -= 1
 
         # If only one node
         if node == self.head and node.next == self.head:
             self.head = None
+            self.size = 0
             return
 
         # If deleting the head
@@ -43,6 +46,7 @@ class Block:
 
         node.prev.next = node.next
         node.next.prev = node.prev
+        self.size -= 1
 
     def traverse(self):
         """Traverse the block forward."""
@@ -60,6 +64,7 @@ class Block:
 
     def is_empty(self):
         return self.head is None
-    
+
     def get_size(self):
         return self.size
+    

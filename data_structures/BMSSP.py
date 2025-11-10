@@ -1,12 +1,37 @@
 from Block import BNode
+from BBLL import BBLL
 
-# Class for a list of BNodes
 class BMSSP:
-    # constructor for the class
-    # N is the number of nodes
-    # s is the index of the source node
     def __init__(self, N, s):
         self.N = N
         self.s = s
-        self.nodes = [BNode(float('inf'))] * N
+        self.nodes = [BNode(float('inf')) for _ in range(N)]
         self.nodes[s].val = 0
+
+
+if __name__ == "__main__":
+    bmssp = BMSSP(10, 0)
+
+    print("--- Empty BBLL ---")
+    ds = BBLL(5, float('inf'), bmssp.nodes)
+    ds.traverse()
+
+    print("--- Inserting <1, 5> ---")
+    ds.insert(1, 5)
+    ds.traverse()
+
+    print("--- Inserting <1, 3> ---")
+    ds.insert(1, 3)
+    ds.traverse()
+
+    print("--- Inserting <2, 5> ---")
+    ds.insert(2, 5)
+    ds.traverse()
+
+    print("--- Inserting <4, 1> ---")
+    ds.insert(4, 1)
+    ds.traverse()
+
+    print("--- Deleting <2, 5> ---")
+    ds.delete(2, 5)
+    ds.traverse()

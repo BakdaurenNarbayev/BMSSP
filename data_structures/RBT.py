@@ -53,7 +53,7 @@ class RedBlackTree:
         curr_node = self.root
         candidate = float('inf')
         while curr_node:
-            if curr_node.value >= value:
+            if curr_node.value > value:
                 candidate = curr_node.value
                 curr_node = curr_node.left
             else:

@@ -1,4 +1,4 @@
-import random
+from utils.MedianFinder import MedianFinder
 
 class BNode:
     def __init__(self, val):
@@ -12,13 +12,17 @@ class Block:
     def __init__(self):
         self.head = None
         self.size = 0
+        self.max_val = float('-inf')
 
     def insert(self, node):
         """Insert a node at the end."""
         if node is None:
             return
 
+        # Update size and max_val
         self.size += 1
+        if node.val > self.max_val:
+            self.max_val = node.val
 
         if self.head is None:
             node.next = node.prev = node
@@ -40,6 +44,7 @@ class Block:
         if node == self.head and node.next == self.head:
             self.head = None
             self.size = 0
+            self.max_val = float('-inf')
             return
 
         # If deleting the head
@@ -50,12 +55,35 @@ class Block:
         node.next.prev = node.prev
         self.size -= 1
 
+        # Recompute max_val only if needed
+        if node.val == self.max_val:
+            self.recompute_max()
+
+    def recompute_max(self):
+        """Recompute max_val by traversing all nodes (O(n))."""
+        if self.is_empty():
+            self.max_val = float('-inf')
+            return
+
+        current = self.head
+        new_max = current.val
+        while True:
+            if current.val > new_max:
+                new_max = current.val
+            current = current.next
+            if current == self.head:
+                break
+        self.max_val = new_max
+
+    def get_max(self):
+        """Return the maximum value in the block."""
+        return self.max_val
+    
     def find_median(self):
-        """Find the median of node values in O(n) expected time using Quickselect."""
         if self.is_empty():
             return None
 
-        # Step 1: Gather all values from the circular linked list
+        # Gather all values from the circular linked list
         values = []
         current = self.head
         while True:
@@ -64,30 +92,7 @@ class Block:
             if current == self.head:
                 break
 
-        # Step 2: Quickselect helper
-        def quickselect(arr, k):
-            if len(arr) == 1:
-                return arr[0]
-            pivot = random.choice(arr)
-            lows = [x for x in arr if x < pivot]
-            highs = [x for x in arr if x > pivot]
-            pivots = [x for x in arr if x == pivot]
-
-            if k < len(lows):
-                return quickselect(lows, k)
-            elif k < len(lows) + len(pivots):
-                return pivot
-            else:
-                return quickselect(highs, k - len(lows) - len(pivots))
-
-        # Step 3: Get median position(s)
-        n = len(values)
-        if n % 2 == 1:
-            return quickselect(values, n // 2)
-        else:
-            left = quickselect(values, n // 2 - 1)
-            right = quickselect(values, n // 2)
-            return (left + right) / 2
+        return MedianFinder.find_median(values)
 
     def traverse(self):
         """Traverse the block forward."""

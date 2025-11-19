@@ -1,5 +1,6 @@
 from Block import Block
 from RBT import RedBlackTree
+from utils.MedianFinder import MedianFinder
 
 # Block-Based Linked List (BBLL)
 class BBLL:
@@ -96,6 +97,43 @@ class BBLL:
         self.D1[left_bound] = left_block
         self.D1[right_bound] = right_block
 
+    def batch_prepend(self, L):
+        """
+        BatchPrepend(L):
+        If len(L) ≤ M → one new block at the start of D0.
+        Else → recursively split L using medians into O(L/M) blocks, 
+        each with ≤ ceil(M/2) elements.
+        Time: O(L log(L/M)).
+        """
+        n = len(L)
+        if n == 0:
+            return
+
+        def recursive_partition(nodes):
+            """Recursively partition arr into blocks of size ≤ ceil(M/2)."""
+            if len(nodes) <= self.M:
+                block = Block()
+                for node in nodes:
+                    block.insert(node)
+                return [block]
+
+            # Find median and split around it
+            median_value = MedianFinder.find_median([node.val for node in nodes])
+            left = [x for x in nodes if x.val < median_value]
+            right = [x for x in nodes if x.val >= median_value]
+
+            # Recursively build smaller blocks
+            return recursive_partition(left) + recursive_partition(right)
+
+        # Step 1: Split L into multiple blocks
+        blocks = recursive_partition(L)
+
+        # Step 2: Prepend blocks to D0
+        # Each block gets an upper bound equal to its max value
+        for block in blocks:
+            max_val = block.get_max()
+            self.D0[max_val] = block
+
     def traverse(self):
         """Traverse D0 then D1."""
         print("Traversing D0:")
@@ -103,6 +141,7 @@ class BBLL:
             print("D0 is empty.")
         else:
             for bound in self.D0:
+                print(f"Bound {bound}:")
                 self.D0[bound].traverse()
 
         print("\nTraversing D1:")

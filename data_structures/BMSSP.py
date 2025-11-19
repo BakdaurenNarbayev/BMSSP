@@ -46,6 +46,8 @@ if __name__ == "__main__":
     bmssp.nodes[7].val = 7
     bmssp.nodes[8].val = 8
     bmssp.nodes[9].val = 9
-    L = [bmssp.nodes[3], bmssp.nodes[6], bmssp.nodes[7], bmssp.nodes[8], bmssp.nodes[9]]
+    L = [bmssp.nodes[7], bmssp.nodes[8], bmssp.nodes[9]]
+    ds.batch_prepend(L)
+    L = [bmssp.nodes[3], bmssp.nodes[6]]
     ds.batch_prepend(L)
     ds.traverse()

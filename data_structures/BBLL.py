@@ -7,6 +7,7 @@ class BBLL:
     def __init__(self, M, B, nodes):
         # D0: for batch prepends
         self.D0 = {}
+        self.D0_bounds = list()
 
         # D1: maintains elements from insert operations
         self.B = B
@@ -130,9 +131,10 @@ class BBLL:
 
         # Step 2: Prepend blocks to D0
         # Each block gets an upper bound equal to its max value
-        for block in blocks:
+        for block in blocks[::-1]: # in reverse order
             max_val = block.get_max()
             self.D0[max_val] = block
+            self.D0_bounds.append(max_val)
 
     def traverse(self):
         """Traverse D0 then D1."""
@@ -140,7 +142,7 @@ class BBLL:
         if not self.D0:
             print("D0 is empty.")
         else:
-            for bound in self.D0:
+            for bound in self.D0_bounds[::-1]:
                 print(f"Bound {bound}:")
                 self.D0[bound].traverse()
 

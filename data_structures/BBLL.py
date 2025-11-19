@@ -8,11 +8,12 @@ class BBLL:
         # D0: for batch prepends
         self.D0 = {}
         self.D0_bounds = list()
+        self.D0_min = B
 
         # D1: maintains elements from insert operations
         self.B = B
         self.D1 = {B: Block()}
-
+        
         # RB tree maintains upper bounds for D1
         self.bounds = RedBlackTree()
         self.bounds.insert(B)
@@ -130,11 +131,101 @@ class BBLL:
         blocks = recursive_partition(L)
 
         # Step 2: Prepend blocks to D0
-        # Each block gets an upper bound equal to its max value
-        for block in blocks[::-1]: # in reverse order
-            max_val = block.get_max()
-            self.D0[max_val] = block
-            self.D0_bounds.append(max_val)
+        # Each block gets an upper bound equal to min value of the next block
+        for i in range(len(blocks) - 1, -1, -1): # in reverse order
+            if i == len(blocks) - 1:
+                bound = self.D0_min
+            else:
+                bound = blocks[i + 1].get_min()
+            
+            self.D0[bound] = blocks[i]
+            self.D0_bounds.append(bound)
+
+            if i == 0:
+                self.D0_min = blocks[0].get_min()
+
+    def pull(self):
+        """
+        Pull: Retrieve the smallest M values from D0 ∪ D1.
+
+        Returns:
+            S_prime : list of (key, val) pairs – the smallest M elements
+            x       : smallest remaining value in D0 ∪ D1 after deletion
+        """
+
+        M = self.M
+
+        # -------------------------------
+        # Step 1: Collect prefix blocks: S′0 from D0, S′1 from D1
+        # -------------------------------
+        S0 = self.collect_from_D0(M)
+        S1 = self.collect_from_D1(M)
+
+        S_all = S0 + S1       # raw elements
+        total = len(S_all)
+
+        # -------------------------------
+        # Case 1: If all elements collected ≤ M → return all of them
+        # -------------------------------
+        if total <= M:
+            # delete all collected elements
+            for key, val in S_all:
+                self.delete(key, val)
+
+            # next smallest remaining value x
+            x = self.find_global_min()
+
+            return S_all, x
+
+        # -------------------------------
+        # Case 2: Need exactly M smallest values from S_all
+        # -------------------------------
+        # Extract M smallest values in O(M) expected time using Quickselect
+        values = [(key, val) for key, val in S_all]
+
+        # quickselect helper
+        def quickselect(arr, k, key=lambda x: x[1]):
+            if len(arr) == 1:
+                return arr[0]
+            pivot = random.choice(arr)
+            pv = key(pivot)
+            lows = [x for x in arr if key(x) < pv]
+            highs = [x for x in arr if key(x) > pv]
+            pivots = [x for x in arr if key(x) == pv]
+
+            if k < len(lows):
+                return quickselect(lows, k, key)
+            elif k < len(lows) + len(pivots):
+                return pivots[0]
+            else:
+                return quickselect(highs, k - len(lows) - len(pivots), key)
+
+        # find threshold value (M-th smallest)
+        threshold_pair = quickselect(values, M-1, key=lambda x: x[1])
+        threshold_val = threshold_pair[1]
+
+        # build S′ = M smallest elements
+        # (stable, because each block keeps elements ≤ M)
+        S_prime = [pair for pair in values if pair[1] < threshold_val]
+
+        # fill remaining equal-to-threshold if needed
+        if len(S_prime) < M:
+            needed = M - len(S_prime)
+            equal_vals = [pair for pair in values if pair[1] == threshold_val]
+            S_prime.extend(equal_vals[:needed])
+
+        # -------------------------------
+        # Step 3: Delete S′ from D0 and D1
+        # -------------------------------
+        for key, val in S_prime:
+            self.delete(key, val)
+
+        # -------------------------------
+        # Step 4: Find next smallest remaining value
+        # -------------------------------
+        x = self.find_global_min()
+
+        return S_prime, x
 
     def traverse(self):
         """Traverse D0 then D1."""

@@ -13,7 +13,7 @@ if __name__ == "__main__":
     bmssp = BMSSP(10, 0)
 
     print("--- Empty BBLL ---")
-    ds = BBLL(3, float('inf'), bmssp.nodes)
+    ds = BBLL(2, float('inf'), bmssp.nodes)
     ds.traverse()
 
     print("--- Inserting <1, 5> ---")
@@ -46,8 +46,9 @@ if __name__ == "__main__":
     bmssp.nodes[7].val = 7
     bmssp.nodes[8].val = 8
     bmssp.nodes[9].val = 9
-    L = [bmssp.nodes[7], bmssp.nodes[8], bmssp.nodes[9]]
+    L = [bmssp.nodes[9]]
     ds.batch_prepend(L)
-    L = [bmssp.nodes[3], bmssp.nodes[6]]
+    ds.traverse()
+    L = [bmssp.nodes[7], bmssp.nodes[8], bmssp.nodes[3], bmssp.nodes[6]]
     ds.batch_prepend(L)
     ds.traverse()

@@ -13,16 +13,19 @@ class Block:
         self.head = None
         self.size = 0
         self.max_val = float('-inf')
+        self.min_val = float('inf')
 
     def insert(self, node):
         """Insert a node at the end."""
         if node is None:
             return
 
-        # Update size and max_val
+        # Update size and extreme vals
         self.size += 1
         if node.val > self.max_val:
             self.max_val = node.val
+        if node.val < self.min_val:
+            self.min_val = node.val
 
         if self.head is None:
             node.next = node.prev = node
@@ -45,6 +48,7 @@ class Block:
             self.head = None
             self.size = 0
             self.max_val = float('-inf')
+            self.min_val = float('inf')
             return
 
         # If deleting the head
@@ -55,9 +59,12 @@ class Block:
         node.next.prev = node.prev
         self.size -= 1
 
-        # Recompute max_val only if needed
+        # Recompute extreme values only if needed
         if node.val == self.max_val:
             self.recompute_max()
+
+        if node.val == self.min_val:
+            self.recompute_min()
 
     def recompute_max(self):
         """Recompute max_val by traversing all nodes (O(n))."""
@@ -75,9 +82,29 @@ class Block:
                 break
         self.max_val = new_max
 
+    def recompute_min(self):
+        """Recompute min_val by traversing all nodes (O(n))."""
+        if self.is_empty():
+            self.min_val = float('inf')
+            return
+
+        current = self.head
+        new_min = current.val
+        while True:
+            if current.val < new_min:
+                new_min = current.val
+            current = current.next
+            if current == self.head:
+                break
+        self.min_val = new_min
+
     def get_max(self):
         """Return the maximum value in the block."""
         return self.max_val
+    
+    def get_min(self):
+        """Return the minimum value in the block."""
+        return self.min_val
     
     def find_median(self):
         if self.is_empty():

@@ -1,7 +1,8 @@
 from utils.MedianFinder import MedianFinder
 
 class BNode:
-    def __init__(self, val):
+    def __init__(self, key, val):
+        self.key = key
         self.val = val
         self.prev = None
         self.next = None
@@ -140,7 +141,7 @@ class Block:
 
         current = self.head
         while True:
-            print(f"({current.val})", end=" → ")
+            print(f"({current.key}, {current.val})", end=" → ")
             current = current.next
             if current == self.head:
                 break

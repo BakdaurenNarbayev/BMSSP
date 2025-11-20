@@ -282,12 +282,16 @@ class RedBlackTree:
 
     # function to find node with minimum value in a subtree
     def _find_min(self, node):
+        if node is None:
+            return None
         while node.left is not None:
             node = node.left
         return node
     
     # function to find node with maximum value in a subtree
     def _find_max(self, node):
+        if node is None:
+            return None
         while node.right is not None:
             node = node.right
         return node

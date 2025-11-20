@@ -1,13 +1,14 @@
 from Block import Block
 from RBT import RedBlackTree
 from utils.MedianFinder import MedianFinder
+import random
 
 # Block-Based Linked List (BBLL)
 class BBLL:
     def __init__(self, M, B, nodes):
         # D0: for batch prepends
         self.D0 = {}
-        self.D0_bounds = list()
+        self.D0_bounds = RedBlackTree()
         self.D0_min = B
 
         # D1: maintains elements from insert operations
@@ -23,9 +24,26 @@ class BBLL:
 
     def delete(self, key, val):
         """Delete key/value pair."""
+        if val < self.D0_bounds._find_max(self.D0_bounds.root).value:
+            bound = self.D0_bounds.search_bound(val)
+            if bound not in self.D0:
+                print(f"[Warning] D0: bound {bound} not found for value {val}.")
+                return
+
+            block = self.D0[bound]
+            node = self.nodes[key]
+            block.delete(node)
+
+            # Delete the block if empty
+            if block.is_empty():
+                del self.D0[bound]
+                self.D0_bounds.delete(bound)
+            return
+
+        # pair is in D1
         bound = self.bounds.search_bound(val)
         if bound not in self.D1:
-            print(f"[Warning] Bound {bound} not found for value {val}.")
+            print(f"[Warning] D1: bound {bound} not found for value {val}.")
             return
 
         block = self.D1[bound]
@@ -139,7 +157,7 @@ class BBLL:
                 bound = blocks[i + 1].get_min()
             
             self.D0[bound] = blocks[i]
-            self.D0_bounds.append(bound)
+            self.D0_bounds.insert(bound)
 
             if i == 0:
                 self.D0_min = blocks[0].get_min()
@@ -171,11 +189,14 @@ class BBLL:
             # delete all collected elements
             for key, val in S_all:
                 self.delete(key, val)
+            
+            if self.D0_bounds.root == None:
+                self.D0_min = self.B
+            else:
+                D0_min_bound = self.D0_bounds._find_min(self.D0_bounds.root).value
+                self.D0_min = self.D0[D0_min_bound].get_min()
 
-            # next smallest remaining value x
-            x = self.find_global_min()
-
-            return S_all, x
+            return S_all, self.B
 
         # -------------------------------
         # Case 2: Need exactly M smallest values from S_all
@@ -225,7 +246,50 @@ class BBLL:
         # -------------------------------
         x = self.find_global_min()
 
+        if self.D0_bounds.root == None:
+            self.D0_min = self.B
+        else:
+            D0_min_bound = self.D0_bounds._find_min(self.D0_bounds.root).value
+            self.D0_min = self.D0[D0_min_bound].get_min()
+
         return S_prime, x
+    
+    def collect_from_D0(self, M):
+        """Collect up to M values from prefix blocks in D0."""
+        result = []
+        inorder_bounds = self.D0_bounds._inorder_traversal_values(self.D0_bounds.root, [])
+
+        for bound in inorder_bounds:
+            block = self.D0[bound]
+            for node in block.iterate():
+                result.append((node.key, node.val))
+                if len(result) >= M:
+                    return result
+        return result
+    
+    def collect_from_D1(self, M):
+        """Collect up to M values from prefix blocks in D1."""
+        result = []
+        inorder_bounds = self.bounds._inorder_traversal_values(self.bounds.root, [])
+
+        for bound in inorder_bounds:
+            block = self.D1[bound]
+            for node in block.iterate():
+                result.append((node.key, node.val))
+                if len(result) >= M:
+                    return result
+        return result
+    
+    def find_global_min(self):
+        """Return the smallest value in D0 ∪ D1 in O(M) time."""
+        if self.D0_min == self.B:
+            bound = self.bounds._find_min(self.bounds.root).value
+            if self.D1[bound].is_empty():
+                return self.B
+            else: 
+                return self.D1[bound].get_min()
+        else:
+            return self.D0_min
 
     def traverse(self):
         """Traverse D0 then D1."""
@@ -233,7 +297,9 @@ class BBLL:
         if not self.D0:
             print("D0 is empty.")
         else:
-            for bound in self.D0_bounds[::-1]:
+            bounds = self.D0_bounds._inorder_traversal_values(self.D0_bounds.root, [])
+            print(f"Bounds: {bounds}")
+            for bound in bounds:
                 print(f"Bound {bound}:")
                 self.D0[bound].traverse()
 

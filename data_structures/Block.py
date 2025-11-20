@@ -120,6 +120,17 @@ class Block:
                 break
 
         return MedianFinder.find_median(values)
+    
+    def iterate(self):
+        """Iterate through all nodes in a circular block."""
+        if self.head is None:
+            return
+        current = self.head
+        while True:
+            yield current
+            current = current.next
+            if current == self.head:
+                break
 
     def traverse(self):
         """Traverse the block forward."""

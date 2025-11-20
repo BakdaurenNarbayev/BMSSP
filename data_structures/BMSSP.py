@@ -52,3 +52,8 @@ if __name__ == "__main__":
     L = [bmssp.nodes[7], bmssp.nodes[8], bmssp.nodes[3], bmssp.nodes[6]]
     ds.batch_prepend(L)
     ds.traverse()
+
+    print("--- Pulling ---")
+    S, x = ds.pull()
+    print(f"S: {S}")
+    print(f"x: {x}")

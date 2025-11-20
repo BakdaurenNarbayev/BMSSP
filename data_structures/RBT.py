@@ -285,6 +285,12 @@ class RedBlackTree:
         while node.left is not None:
             node = node.left
         return node
+    
+    # function to find node with maximum value in a subtree
+    def _find_max(self, node):
+        while node.right is not None:
+            node = node.right
+        return node
 
     # function to perform inorder traversal
     def _inorder_traversal(self, node):

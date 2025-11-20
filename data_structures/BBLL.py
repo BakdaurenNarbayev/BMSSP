@@ -164,8 +164,8 @@ class BBLL:
         Pull: Retrieve the smallest M values from D0 ∪ D1.
 
         Returns:
-            S_prime         : list of (key, val) pairs – the smallest M elements
-            x : smallest remaining value in D0 ∪ D1 after deletion
+            S_prime : list of (key, val) pairs – the smallest M elements
+            x       : smallest remaining value in D0 ∪ D1 after deletion
         """
 
         M = self.M
@@ -273,23 +273,93 @@ class BBLL:
 
     def traverse(self):
         """Traverse D0 then D1."""
-        print("Traversing D0:")
         if not self.D0:
-            print("D0 is empty.")
+            D0_bounds = []
+            num_D0_blocks = 0
         else:
-            bounds = self.D0_bounds._inorder_traversal_values(self.D0_bounds.root, [])
-            print(f"Bounds: {bounds}")
-            for bound in bounds:
-                print(f"Bound {bound}:")
-                self.D0[bound].traverse()
+            D0_bounds = self.D0_bounds._inorder_traversal_values(self.D0_bounds.root, [])
+            num_D0_blocks = len(D0_bounds)
 
-        print("\nTraversing D1:")
         if not self.D1:
-            print("D1 is empty.")
+            D1_bounds = []
+            num_D1_blocks = 0
         else:
-            bounds = self.D1_bounds._inorder_traversal_values(self.D1_bounds.root, [])
-            print(f"Bounds: {bounds}")
-            for bound in bounds:
-                print(f"Bound {bound}:")
-                self.D1[bound].traverse()
+            D1_bounds = self.D1_bounds._inorder_traversal_values(self.D1_bounds.root, [])
+            num_D1_blocks = len(D1_bounds)
+        
+        dots = "." * 8
+        tab = "\t"
+
+        print()
+        print(tab * num_D0_blocks + "   D0   " + tab * num_D0_blocks + tab + tab * num_D1_blocks + "   D1   " + tab * num_D1_blocks)
+        print(dots * (2 * num_D0_blocks + 1) + "." + tab + dots * (2 * num_D1_blocks + 1) + ".")
+        
+        bounds_line = "."
+        for bound in D0_bounds:
+            bounds_line += tab + "Bound: " + str(bound)
+        bounds_line += tab + "." + tab + "."
+        for bound in D1_bounds:
+            bounds_line += tab + "Bound: " + str(bound)
+        bounds_line += tab + "."
+        print(bounds_line)
+
+        print("." + tab * (2 * num_D0_blocks + 1) + "." + tab + "." + tab * (2 * num_D1_blocks + 1) + ".")
+
+        D0_map = {}
+        for bound in D0_bounds:
+            D0_map[bound] = list()
+            block = self.D0[bound]
+            current = block.head
+            while current != None:
+                D0_map[bound].append(f"<{current.key}, {current.val}>")
+                current = current.next
+                if current == block.head:
+                    break
+            D0_map[bound].append("(head)")
+
+        D1_map = {}
+        for bound in D1_bounds:
+            D1_map[bound] = list()
+            block = self.D1[bound]
+            current = block.head
+            while current != None:
+                D1_map[bound].append(f"<{current.key}, {current.val}>")
+                current = current.next
+                if current == block.head:
+                    break
+            D1_map[bound].append("(head)")
+
+        for i in range(self.M + 1):
+            nodes_line = "."
+            arrows_line = "."
+            for bound in D0_bounds:
+                block_nodes = D0_map[bound]
+                if i < len(block_nodes):
+                    nodes_line += tab + block_nodes[i] + tab
+                    if block_nodes[i] != "(head)":
+                        arrows_line += tab + "   |" + tab
+                    else:
+                        arrows_line += tab + tab
+                else:
+                    nodes_line += tab + tab
+                    arrows_line += tab + tab
+            nodes_line += tab + "." + tab + "."
+            arrows_line += tab + "." + tab + "."
+            for bound in D1_bounds:
+                block_nodes = D1_map[bound]
+                if i < len(block_nodes):
+                    nodes_line += tab + block_nodes[i] + tab
+                    if block_nodes[i] != "(head)":
+                        arrows_line += tab + "   |" + tab
+                    else:
+                        arrows_line += tab + tab
+                else:
+                    nodes_line += tab + tab
+                    arrows_line += tab + tab
+            nodes_line += tab + "."
+            arrows_line += tab + "."
+            print(nodes_line)
+            print(arrows_line)
+
+        print(dots * (2 * num_D0_blocks + 1) + "." + tab + dots * (2 * num_D1_blocks + 1) + ".")
         print()

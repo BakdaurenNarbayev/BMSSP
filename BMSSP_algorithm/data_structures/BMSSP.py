@@ -1,5 +1,5 @@
-from Block import BNode
-from BBLL import BBLL
+from BMSSP_algorithm.data_structures.Block import BNode
+from BMSSP_algorithm.data_structures.BBLL import BBLL
 
 class BMSSP:
     def __init__(self, N, s):

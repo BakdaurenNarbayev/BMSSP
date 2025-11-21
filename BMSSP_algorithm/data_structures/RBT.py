@@ -118,115 +118,120 @@ class RedBlackTree:
                     self.rotate_left(new_node.grandparent())
         self.root.color = 'black'
 
-    # function to delete a value from RB Tree
     def delete(self, value):
-        node_to_remove = self.search(value)
-
-        if node_to_remove is None:
+        z = self.search(value)
+        if not z:
             return
 
-        original_color = node_to_remove.color
+        y = z
+        y_original_color = y.color
 
-        if node_to_remove.left is None:
-            x = node_to_remove.right
-            self._replace_node(node_to_remove, node_to_remove.right)
-        elif node_to_remove.right is None:
-            x = node_to_remove.left
-            self._replace_node(node_to_remove, node_to_remove.left)
+        # Choose node x to move up
+        if z.left is None:
+            x = z.right
+            self._replace_node(z, z.right)
+
+        elif z.right is None:
+            x = z.left
+            self._replace_node(z, z.left)
+
         else:
-            y = self._find_min(node_to_remove.right)
-            original_color = y.color
+            # successor
+            y = self._find_min(z.right)
+            y_original_color = y.color
             x = y.right
-            if y.parent == node_to_remove:
+
+            if y.parent == z:
                 if x:
                     x.parent = y
             else:
                 self._replace_node(y, y.right)
-                y.right = node_to_remove.right
+                y.right = z.right
                 y.right.parent = y
-            self._replace_node(node_to_remove, y)
-            y.left = node_to_remove.left
+
+            self._replace_node(z, y)
+            y.left = z.left
             y.left.parent = y
-            y.color = node_to_remove.color
+            y.color = z.color
 
-        if original_color == 'black' and x:
-            self.delete_fix(x)
+        # If we removed a black node, fix double-black
+        if y_original_color == "black":
+            self.delete_fix(x, parent=y.parent if x is None else x.parent)
 
-    # function to fix RB Tree properties after deletion
-    def delete_fix(self, x):
-        # If x is None (deleted node had no children), nothing to fix
-        while x != self.root and (x is None or x.color == 'black'):
-            parent = x.parent if x else None
-            if parent is None:
-                break
 
-            # Determine whether x is a left or right child
-            if x == parent.left:
+    def delete_fix(self, x, parent):
+        while (x != self.root) and (x is None or x.color == "black"):
+
+            if x == (parent.left if parent else None):
                 sibling = parent.right
-                # Case 1: sibling is red
-                if sibling and sibling.color == 'red':
-                    sibling.color = 'black'
-                    parent.color = 'red'
+
+                if sibling and sibling.color == "red":
+                    sibling.color = "black"
+                    parent.color = "red"
                     self.rotate_left(parent)
                     sibling = parent.right
 
-                # Case 2: sibling and its children are black
-                if (sibling is None or
-                    ((sibling.left is None or sibling.left.color == 'black') and
-                    (sibling.right is None or sibling.right.color == 'black'))):
+                if (
+                    (sibling is None) or
+                    ((sibling.left is None or sibling.left.color == "black") and
+                    (sibling.right is None or sibling.right.color == "black"))
+                ):
                     if sibling:
-                        sibling.color = 'red'
+                        sibling.color = "red"
                     x = parent
+                    parent = x.parent
                 else:
-                    # Case 3: sibling's right child is black, left is red
-                    if sibling and (sibling.right is None or sibling.right.color == 'black'):
+                    if sibling and (sibling.right is None or sibling.right.color == "black"):
                         if sibling.left:
-                            sibling.left.color = 'black'
-                        sibling.color = 'red'
+                            sibling.left.color = "black"
+                        sibling.color = "red"
                         self.rotate_right(sibling)
                         sibling = parent.right
 
-                    # Case 4: sibling's right child is red
                     if sibling:
                         sibling.color = parent.color
-                        if sibling.right:
-                            sibling.right.color = 'black'
-                    parent.color = 'black'
+                    parent.color = "black"
+                    if sibling and sibling.right:
+                        sibling.right.color = "black"
                     self.rotate_left(parent)
                     x = self.root
+
             else:
-                # Mirror cases: x is right child
                 sibling = parent.left
-                if sibling and sibling.color == 'red':
-                    sibling.color = 'black'
-                    parent.color = 'red'
+
+                if sibling and sibling.color == "red":
+                    sibling.color = "black"
+                    parent.color = "red"
                     self.rotate_right(parent)
                     sibling = parent.left
 
-                if (sibling is None or
-                    ((sibling.left is None or sibling.left.color == 'black') and
-                    (sibling.right is None or sibling.right.color == 'black'))):
+                if (
+                    (sibling is None) or
+                    ((sibling.left is None or sibling.left.color == "black") and
+                    (sibling.right is None or sibling.right.color == "black"))
+                ):
                     if sibling:
-                        sibling.color = 'red'
+                        sibling.color = "red"
                     x = parent
+                    parent = x.parent
                 else:
-                    if sibling and (sibling.left is None or sibling.left.color == 'black'):
+                    if sibling and (sibling.left is None or sibling.left.color == "black"):
                         if sibling.right:
-                            sibling.right.color = 'black'
-                        sibling.color = 'red'
+                            sibling.right.color = "black"
+                        sibling.color = "red"
                         self.rotate_left(sibling)
                         sibling = parent.left
 
                     if sibling:
                         sibling.color = parent.color
-                        if sibling.left:
-                            sibling.left.color = 'black'
-                    parent.color = 'black'
+                    parent.color = "black"
+                    if sibling and sibling.left:
+                        sibling.left.color = "black"
                     self.rotate_right(parent)
                     x = self.root
 
         if x:
-            x.color = 'black'
+            x.color = "black"
 
     # Function for left rotation of RB Tree
     def rotate_left(self, node):

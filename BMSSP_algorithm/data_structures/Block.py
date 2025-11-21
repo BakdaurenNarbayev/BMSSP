@@ -1,4 +1,4 @@
-from utils.MedianFinder import MedianFinder
+from BMSSP_algorithm.utils.MedianFinder import MedianFinder
 
 class BNode:
     def __init__(self, key, val):
@@ -42,6 +42,11 @@ class Block:
     def delete(self, node):
         """Delete a node by reference."""
         if self.head is None or node is None:
+            return
+        
+        # If node is not currently linked into this block, ignore it
+        # (e.g., node never inserted or already removed)
+        if node.next is None or node.prev is None:
             return
 
         # If only one node

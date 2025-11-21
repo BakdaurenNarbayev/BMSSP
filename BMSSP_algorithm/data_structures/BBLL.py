@@ -1,6 +1,6 @@
-from Block import Block
-from RBT import RedBlackTree
-from utils.MedianFinder import MedianFinder
+from BMSSP_algorithm.data_structures.Block import Block
+from BMSSP_algorithm.data_structures.RBT import RedBlackTree
+from BMSSP_algorithm.utils.MedianFinder import MedianFinder
 import random
 
 # Block-Based Linked List (BBLL)
@@ -26,7 +26,10 @@ class BBLL:
         D0_max_bound_node = self.D0_bounds._find_max(self.D0_bounds.root)
         if D0_max_bound_node is not None and val < D0_max_bound_node.value:
             bound = self.D0_bounds.search_bound(val)
-            if bound not in self.D0:
+            if bound == float('inf'):
+                bound = D0_max_bound_node.value
+
+            if bound is None or bound not in self.D0:
                 print(f"[Warning] D0: bound {bound} not found for value {val}.")
                 return
 
@@ -42,7 +45,11 @@ class BBLL:
 
         # pair is in D1
         bound = self.D1_bounds.search_bound(val)
-        if bound not in self.D1:
+        if bound == float('inf'):
+            max_node = self.D1_bounds._find_max(self.D1_bounds.root)
+            bound = max_node.value if max_node is not None else None
+
+        if bound is None or bound not in self.D1:
             print(f"[Warning] D1: bound {bound} not found for value {val}.")
             return
 
@@ -58,18 +65,27 @@ class BBLL:
     def insert(self, key, new_val):
         """Insert or update a key/value pair."""
         node = self.nodes[key]
+        old_val = node.val
 
-        if new_val >= node.val:
-            return # no need to insert if value not improved
+        # Only improve
+        if new_val >= old_val:
+            return
 
         # Remove from old block if present
         if node.next is not None:
-            self.delete(key, node.val)
+            self.delete(key, old_val)
 
+        # Now update to the new, improved value
+        node.val = new_val
+
+        # Find appropriate bound; if no bound > new_val, use the max bound
         bound = self.D1_bounds.search_bound(new_val)
+        if bound == float('inf'):
+            max_node = self.D1_bounds._find_max(self.D1_bounds.root)
+            bound = max_node.value if max_node is not None else self.B
+
         block = self.D1[bound]
         block.insert(node)
-        node.val = new_val
 
         if block.get_size() > self.M:
             self.split(block, bound)
@@ -262,14 +278,25 @@ class BBLL:
     
     def find_global_min(self):
         """Return the smallest value in D0 ∪ D1 in O(M) time."""
-        if self.D0_bounds.root == None:
-            D1_min_bound = self.D1_bounds._find_min(self.D1_bounds.root).value
-            return self.D1[D1_min_bound].get_min()
-        else:
-            D0_min_bound = self.D0_bounds._find_min(self.D0_bounds.root).value
-            if D0_min_bound == self.B and self.D0[D0_min_bound].is_empty():
-                return self.B
-            return self.D0[D0_min_bound].get_min()
+        candidate = self.B
+
+        # Check D0's smallest bound
+        if self.D0_bounds.root is not None:
+            min_bound_node = self.D0_bounds._find_min(self.D0_bounds.root)
+            if min_bound_node is not None:
+                block = self.D0[min_bound_node.value]
+                if not block.is_empty():
+                    candidate = min(candidate, block.get_min())
+
+        # Check D1's smallest bound
+        if self.D1_bounds.root is not None:
+            min_bound_node = self.D1_bounds._find_min(self.D1_bounds.root)
+            if min_bound_node is not None:
+                block = self.D1[min_bound_node.value]
+                if not block.is_empty():
+                    candidate = min(candidate, block.get_min())
+
+        return candidate
 
     def traverse(self):
         """Traverse D0 then D1."""

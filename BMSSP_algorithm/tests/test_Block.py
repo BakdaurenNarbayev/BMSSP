@@ -1,103 +1,198 @@
 import pytest
-from data_structures.Block import Block, BNode
+from BMSSP_algorithm.data_structures.Block import Block, BNode
+from BMSSP_algorithm.utils.MedianFinder import MedianFinder
 
-@pytest.fixture
-def empty_block():
-    return Block()
 
-@pytest.fixture
-def filled_block():
+# ---------------------------
+# Helper functions
+# ---------------------------
+
+def collect_vals(block: Block):
+    return [node.val for node in block.iterate()] if not block.is_empty() else []
+
+
+# ---------------------------
+# Basic insert tests
+# ---------------------------
+
+def test_insert_single_node():
     b = Block()
-    nodes = [BNode(i) for i in range(1, 4)]
-    for node in nodes:
-        b.insert(node)
-    return b, nodes
+    n = BNode(1, 10)
+    b.insert(n)
 
-def traverse_nodes(block):
-    """Helper to collect all nodes in the circular list."""
-    if block.is_empty():
-        return []
-    nodes = []
-    current = block.head
-    while True:
-        nodes.append(current)
-        current = current.next
-        if current == block.head:
-            break
-    return nodes
+    assert b.get_size() == 1
+    assert b.head == n
+    assert n.next == n and n.prev == n
+    assert b.get_min() == 10
+    assert b.get_max() == 10
 
-# --- Insertion tests ---
-def test_insert_single_node(empty_block):
-    node = BNode(10)
-    empty_block.insert(node)
-    assert empty_block.head == node
-    assert node.next == node.prev == node
-    assert empty_block.get_size() == 1
 
-def test_insert_multiple_nodes(filled_block):
-    b, nodes = filled_block
+def test_insert_multiple_nodes():
+    b = Block()
+    nodes = [BNode(i, v) for i, v in enumerate([5, 10, 3])]
+
+    for n in nodes:
+        b.insert(n)
+
+    vals = collect_vals(b)
+    assert vals == [5, 10, 3]
     assert b.get_size() == 3
-    # Check circular links
-    assert nodes[0].prev == nodes[-1]
-    assert nodes[-1].next == nodes[0]
-    # Sequential links
-    assert nodes[0].next == nodes[1]
-    assert nodes[1].next == nodes[2]
-    assert nodes[2].prev == nodes[1]
+    assert b.get_min() == 3
+    assert b.get_max() == 10
 
-# --- Deletion tests ---
-def test_delete_middle_node(filled_block):
-    b, nodes = filled_block
-    middle = nodes[1]
-    b.delete(middle)
-    remaining = traverse_nodes(b)
-    assert middle not in remaining
+
+def test_circular_structure_preserved():
+    b = Block()
+    nodes = [BNode(i, v) for i, v in enumerate([1, 2, 3])]
+    for n in nodes:
+        b.insert(n)
+
+    cur = b.head
+    seen = []
+    for _ in range(5):  # more than size → should still loop cleanly
+        seen.append(cur.val)
+        cur = cur.next
+
+    assert seen[:3] == [1, 2, 3]
+    assert seen[3:] == [1, 2]
+
+
+# ---------------------------
+# Delete tests
+# ---------------------------
+
+def test_delete_only_node():
+    b = Block()
+    n = BNode(1, 50)
+    b.insert(n)
+
+    b.delete(n)
+
+    assert b.is_empty()
+    assert b.get_size() == 0
+    assert b.get_min() == float("inf")
+    assert b.get_max() == float("-inf")
+
+
+def test_delete_head_node():
+    b = Block()
+    nodes = [BNode(i, v) for i, v in enumerate([7, 3, 9])]
+    for n in nodes:
+        b.insert(n)
+
+    b.delete(nodes[0])  # delete head
+
     assert b.get_size() == 2
-    # Circularity after deletion
-    assert nodes[0].next == nodes[2]
-    assert nodes[2].prev == nodes[0]
+    vals = collect_vals(b)
+    assert vals == [3, 9]
+    assert b.get_min() == 3
+    assert b.get_max() == 9
 
-def test_delete_head_node(filled_block):
-    b, nodes = filled_block
-    old_head = nodes[0]
-    b.delete(old_head)
-    assert b.head == nodes[1]
-    remaining = [n.val for n in traverse_nodes(b)]
-    assert remaining == [2, 3]
+
+def test_delete_middle_node():
+    b = Block()
+    a, bnode, c = BNode(1, 5), BNode(2, 10), BNode(3, 7)
+
+    for x in [a, bnode, c]:
+        b.insert(x)
+
+    b.delete(bnode)
+
+    assert collect_vals(b) == [5, 7]
+    assert b.get_min() == 5
+    assert b.get_max() == 7
+
+
+def test_delete_tail_node():
+    b = Block()
+    a, bnode, c = BNode(1, 2), BNode(2, 5), BNode(3, 10)
+    for n in [a, bnode, c]:
+        b.insert(n)
+
+    # tail is c
+    b.delete(c)
+
+    assert collect_vals(b) == [2, 5]
+    assert b.get_max() == 5  # c was max
+
+
+def test_delete_updates_min_max_correctly():
+    b = Block()
+    n1 = BNode(1, 100)
+    n2 = BNode(2, 5)
+    n3 = BNode(3, 50)
+
+    for n in [n1, n2, n3]:
+        b.insert(n)
+
+    b.delete(n1)  # delete max
+    assert b.get_max() == 50
+
+    b.delete(n2)  # delete min
+    assert b.get_min() == 50
+
+
+# ---------------------------
+# Median tests
+# ---------------------------
+
+def test_median_odd():
+    b = Block()
+    for val in [5, 2, 9]:
+        b.insert(BNode(val, val))
+
+    assert b.find_median() == 5  # sorted: [2,5,9]
+
+
+def test_median_even():
+    b = Block()
+    for val in [4, 10, 2, 8]:
+        b.insert(BNode(val, val))
+
+    assert b.find_median() == (4 + 8) / 2  # sorted: [2,4,8,10]
+
+
+def test_median_single():
+    b = Block()
+    b.insert(BNode(1, 77))
+    assert b.find_median() == 77
+
+
+def test_median_empty():
+    b = Block()
+    assert b.find_median() is None
+
+
+# ---------------------------
+# Iteration tests
+# ---------------------------
+
+def test_iterate_returns_all_nodes_exactly_once():
+    b = Block()
+    vals = [10, 20, 30, 40]
+    for i, v in enumerate(vals):
+        b.insert(BNode(i, v))
+
+    assert collect_vals(b) == vals
+
+
+# ---------------------------
+# Size and empty tests
+# ---------------------------
+
+def test_size_tracking():
+    b = Block()
+    nodes = [BNode(i, v) for i, v in enumerate([1, 2, 3])]
+    for n in nodes:
+        b.insert(n)
+
+    assert b.get_size() == 3
+    b.delete(nodes[1])
     assert b.get_size() == 2
-    # Circularity
-    assert nodes[1].prev == nodes[2]
-    assert nodes[2].next == nodes[1]
 
-def test_delete_tail_node(filled_block):
-    b, nodes = filled_block
-    tail = nodes[-1]
-    b.delete(tail)
-    remaining = [n.val for n in traverse_nodes(b)]
-    assert remaining == [1, 2]
-    assert b.get_size() == 2
-    # Circularity
-    assert nodes[0].next == nodes[1]
-    assert nodes[1].prev == nodes[0]
 
-def test_delete_only_node(empty_block):
-    node = BNode(99)
-    empty_block.insert(node)
-    empty_block.delete(node)
-    assert empty_block.is_empty()
-    assert empty_block.get_size() == 0
-
-def test_delete_none(empty_block):
-    empty_block.delete(None)
-    assert empty_block.is_empty()
-    assert empty_block.get_size() == 0
-
-# --- Traversal tests ---
-def test_traverse_prints(capsys, filled_block):
-    b, _ = filled_block
-    b.traverse()
-    output = capsys.readouterr().out
-    assert "(1)" in output
-    assert "(2)" in output
-    assert "(3)" in output
-    assert "(head)" in output
+def test_empty_block_properties():
+    b = Block()
+    assert b.is_empty()
+    assert b.get_min() == float("inf")
+    assert b.get_max() == float("-inf")

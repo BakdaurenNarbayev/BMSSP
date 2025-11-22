@@ -178,7 +178,7 @@ class PathfindingTUI(App):
 
         try:
             if algorithm == "dijkstra":
-                result = dijkstra(self.current_graph, start, end)
+                result = dijkstra(self.current_graph, start)
             else:
                 result = bellman_ford(self.current_graph, start)
 

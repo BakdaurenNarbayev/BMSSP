@@ -1,0 +1,21 @@
+demo_run: false
+custom_dataset_run: false
+custom_dataset_conf:
+  dataset_path: null
+scaling_benchmark_run: true
+scaling_benchmark_conf:
+  min_nodes:  10
+  max_nodes:  1e5
+  num_steps: 5
+  edge_ratios: 
+  - 1.0
+  - 1.2
+  - 1.5
+  algos_to_test:
+  - dijkstra
+  - bellmanford
+  exclude_algos_above:
+  - ["bellmanford", 1e4]
+  seed: 42
+  num_trials: 3
+  save_result_path: null

@@ -90,7 +90,7 @@ def plot_results(
                     )
 
         # Axis labels and title
-        ax.set_xlabel("Node Size" if len(node_sizes) > 1 else "Algorithm")
+        ax.set_xlabel("Number of Nodes" if len(node_sizes) > 1 else "Algorithm")
         ax.set_ylabel(label)
         ax.set_title(label)
         ax.grid(True, alpha=0.3)

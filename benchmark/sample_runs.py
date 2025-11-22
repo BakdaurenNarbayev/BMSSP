@@ -140,7 +140,7 @@ def scaling_benchmark(
     # Remove duplicates that may be caused by rounding
     nodes_sizes = sorted(set(nodes_sizes))
     print(
-        f"Running scaling benchmark with node sizes: {' | '.join(f'{x:,}' for x in nodes_sizes)}"
+        f"Running scaling benchmark with the following number of node: {' | '.join(f'{x:,}' for x in nodes_sizes)}"
     )
 
     start_node_index = 0

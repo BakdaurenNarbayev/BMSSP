@@ -1,7 +1,7 @@
 import math
 import heapq
 from typing import List, Tuple
-from methods.base import BaseShortestPath
+from benchmark.methods.base import BaseShortestPath
 
 
 class Dijkstra(BaseShortestPath):

@@ -1,5 +1,5 @@
 import math
-from methods.base import BaseShortestPath
+from benchmark.methods.base import BaseShortestPath
 
 
 class BellmanFord(BaseShortestPath):

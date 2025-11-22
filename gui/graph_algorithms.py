@@ -1,7 +1,8 @@
 import time
-import heapq
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Type
+from benchmark.methods.dijkstra import Dijkstra
 from benchmark.datastructures.graph import Graph
+from benchmark.methods.bellman_ford import BellmanFord
 
 
 class PathResult:
@@ -48,59 +49,39 @@ class PathResult:
         )
 
 
-def dijkstra(graph: Graph, start: int, end: Optional[int] = None) -> PathResult:
+def run_shortest_path_algo(
+    algo_class: Type, graph: Graph, start: int, name: Optional[str] = None
+) -> PathResult:
     """
-    Dijkstra's algorithm for finding shortest paths.
-
-    Time Complexity: O((V + E) log V) with binary heap
-    Space Complexity: O(V)
+    Runs a shortest-path algorithm and measures execution time and iterations.
 
     Args:
-        graph: The graph to search
-        start: Starting node
-        end: Optional ending node (for early termination)
+        algo_class: The class of the algorithm (e.g., Dijkstra or BellmanFord)
+        graph: Graph instance
+        start: Start node index
+        name: Optional name override for the algorithm
 
     Returns:
-        PathResult containing distances, previous nodes, and metrics
+        PathResult containing distances, predecessors, execution time, iterations, and name
     """
+    algo = algo_class(graph, start)
+
     start_time = time.perf_counter()
-
-    # Initialize distances and previous nodes
-    distances = {start: 0}
-    previous = {start: None}
-    visited = set()
-
-    # Priority queue: (distance, node)
-    pq = [(0, start)]
-    operations = 0
-
-    while pq:
-        current_dist, current = heapq.heappop(pq)
-        operations += 1
-
-        # Skip if already visited
-        if current in visited:
-            continue
-
-        visited.add(current)
-
-        # Early termination if we reached the end
-        if end is not None and current == end:
-            break
-
-        # Explore neighbors
-        for neighbor, weight in graph.get_neighbors(current):
-            if neighbor not in visited:
-                distance = current_dist + weight
-
-                # Update if we found a shorter path
-                if distance < distances.get(neighbor, float("inf")):
-                    distances[neighbor] = distance
-                    previous[neighbor] = current
-                    heapq.heappush(pq, (distance, neighbor))
-                    operations += 1
-
+    algo.run()
     end_time = time.perf_counter()
-    execution_time = end_time - start_time
 
-    return PathResult(distances, previous, execution_time, operations, "Dijkstra")
+    execution_time = end_time - start_time
+    distances = algo.dist
+    previous = algo.pred
+    operations = algo.iterations
+    algo_name = name or algo_class.__name__
+
+    return PathResult(distances, previous, execution_time, operations, algo_name)
+
+
+def dijkstra(graph: Graph, start: int) -> PathResult:
+    return run_shortest_path_algo(Dijkstra, graph, start, "Dijkstra")
+
+
+def bellman_ford(graph: Graph, start: int) -> PathResult:
+    return run_shortest_path_algo(BellmanFord, graph, start, "Bellman-Ford")

@@ -1,6 +1,6 @@
 import math
 from abc import ABC, abstractmethod
-from datastructures.graph import Graph
+from benchmark.datastructures.graph import Graph
 from typing import Dict, List, Optional
 
 

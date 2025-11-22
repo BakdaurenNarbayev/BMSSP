@@ -1,7 +1,17 @@
 demo_run: false
+demo_conf:
+  algos_to_test:
+  - dijkstra
+  - bellmanford
+  save_result_path: results
 custom_dataset_run: false
 custom_dataset_conf:
-  dataset_path: null
+  graph_path: benchmark/datasets/road-minnesota.mtx
+  directed_graph: false
+  algos_to_test:
+  - dijkstra
+  - bellmanford
+  save_result_path: results
 scaling_benchmark_run: true
 scaling_benchmark_conf:
   min_nodes:  10
@@ -18,4 +28,4 @@ scaling_benchmark_conf:
   - ["bellmanford", 1e4]
   seed: 42
   num_trials: 3
-  save_result_path: null
+  save_result_path: results

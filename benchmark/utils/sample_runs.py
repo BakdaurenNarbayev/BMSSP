@@ -3,6 +3,7 @@ import numpy as np
 from benchmark.utils.plot import plot_results
 from typing import Any, Dict, List, Optional, Tuple
 from benchmark.utils.benchmark import ShortestPathBenchmark
+from benchmark.utils.process_graph import load_graph_from_file
 from benchmark.utils.generate_graphs import generate_random_graph
 from benchmark.utils.misc import save_benchmark_results_json, get_file_paths_to_save
 
@@ -87,23 +88,17 @@ def print_benchmark_results(
     print(border)
 
 
-def demo_run() -> None:
+def demo_run(
+    algos_to_test: Optional[List[str]] = None,
+    save_result_path: str = None,
+) -> Tuple[str | None, str | None]:
     """
     Run a small demo benchmark for graph-based shortest path checker and print results.
 
     This demo generates a modest graph of 50,000 nodes and 100,000 edges,
-    runs the benchmark using default parameters, and prints results using
-    `print_benchmark_results`.
-
-    Notes:
-        - Plotting is skipped because plotting requires results across multiple dataset sizes.
-        - This demo uses a small-scale dataset for quick testing.
+    runs the benchmark using default parameters, and prints and plots the results.
     """
-    print(
-        "Demo: generate a small-scale dataset and run the benchmark logic \n"
-        "Note: plotting skipped — plotting requires results across multiple dataset sizes.\n"
-        "To enable plotting, use a scaling benchmark run and disable demo_run."
-    )
+    print("Demo: generate a small-scale dataset and run the benchmark logic.")
     print("=" * 90 + "\n")
 
     seed = 42
@@ -116,9 +111,61 @@ def demo_run() -> None:
     graph = generate_random_graph(num_nodes, num_edges, seed=seed)
 
     print("Running benchmark...")
-    results = ShortestPathBenchmark(graph, start_node_idx).run()
+    results = ShortestPathBenchmark(
+        graph, start_node_idx, algorithms=algos_to_test
+    ).run()
 
     print_benchmark_results(results)
+
+    node_sizes = [graph.node_count]
+    edge_ratios = [graph.edge_count / graph.node_count]
+
+    print("\nGenerating plots...")
+    if save_result_path is not None:
+        file_path_json, file_path_pdf = get_file_paths_to_save(save_result_path)
+        plot_results(results, node_sizes, edge_ratios, file_path_pdf)
+        save_benchmark_results_json(file_path_json, results, node_sizes, edge_ratios)
+        return file_path_json, file_path_pdf
+    else:
+        plot_results(results, node_sizes, edge_ratios)
+        return None, None
+
+
+def run_custom_graph(
+    graph_path: str,
+    directed_graph: bool,
+    algos_to_test: Optional[List[str]] = None,
+    save_result_path: str = None,
+) -> Tuple[str | None, str | None]:
+    try:
+        print(f"Loading the graph in {graph_path}...")
+        graph = load_graph_from_file(graph_path, directed_graph)
+    except Exception as e:
+        print(f"Failed to load the graph: {e}")
+        return
+
+    start_node_idx = 0
+    print("Running benchmark...")
+    results = ShortestPathBenchmark(
+        graph, start_node_idx, algorithms=algos_to_test
+    ).run()
+    print_benchmark_results(results)
+
+    node_sizes = [graph.node_count]
+    edge_ratios = [graph.edge_count / graph.node_count]
+    meta = {"graph_path": graph_path, "directed_graph": directed_graph}
+
+    print("\nGenerating plots...")
+    if save_result_path is not None:
+        file_path_json, file_path_pdf = get_file_paths_to_save(save_result_path)
+        plot_results(results, node_sizes, edge_ratios, file_path_pdf)
+        save_benchmark_results_json(
+            file_path_json, results, node_sizes, edge_ratios, meta
+        )
+        return file_path_json, file_path_pdf
+    else:
+        plot_results(results, node_sizes, edge_ratios)
+        return None, None
 
 
 def scaling_benchmark(
@@ -219,7 +266,7 @@ def run_scaling_benchmark(
     num_trials: int = 3,
     seed: int = 42,
     save_result_path: str = None,
-) -> None:
+) -> Tuple[str | None, str | None]:
     print("Scaling Benchmark Run: Performance vs Graph Size")
     print("=" * 50)
 
@@ -258,8 +305,10 @@ def run_scaling_benchmark(
 
     print("\nGenerating plots...")
     if save_result_path is not None:
-        plot_results(results, node_sizes, edge_ratios, file_path_pdf)
         file_path_json, file_path_pdf = get_file_paths_to_save(save_result_path)
+        plot_results(results, node_sizes, edge_ratios, file_path_pdf)
         save_benchmark_results_json(file_path_json, results, node_sizes, edge_ratios)
+        return file_path_json, file_path_pdf
     else:
         plot_results(results, node_sizes, edge_ratios)
+        return None, None

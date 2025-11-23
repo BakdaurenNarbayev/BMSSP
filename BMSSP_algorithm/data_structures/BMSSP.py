@@ -1,5 +1,7 @@
 import math
+import heapq
 from collections import deque
+from typing import List, Tuple
 from BMSSP_algorithm.base import BaseShortestPath
 from BMSSP_algorithm.graph import Graph
 from BMSSP_algorithm.data_structures.Block import BNode
@@ -67,10 +69,10 @@ class BMSSP(BaseShortestPath):
             W_curr = set()
             
             for u in W_prev:
-                d_u = self.dist.get(u, math.inf)
+                d_u = self.dist[u]
                 for v, w in self.graph.get_neighbors(u):
                     alt = d_u + w
-                    if alt <= self.dist.get(v, math.inf):
+                    if alt <= self.dist[v]:
                         self.dist[v] = alt
                         self.pred[v] = u
 
@@ -88,9 +90,9 @@ class BMSSP(BaseShortestPath):
         children = {u: [] for u in W}
 
         for u in W:
-            d_u = self.dist.get(u, math.inf)
+            d_u = self.dist[u]
             for v, w in self.graph.get_neighbors(u):
-                if v in W and self.dist.get(v, math.inf) == d_u + w:
+                if v in W and self.dist[v] == d_u + w:
                     children[u].append(v)
 
         # Roots = nodes with no parent
@@ -119,3 +121,40 @@ class BMSSP(BaseShortestPath):
 
         return P, W
     
+    def base_case(self, B, S):
+        # S must be a singleton {x}
+        assert len(S) == 1
+        x = next(iter(S))
+
+        # U0 starts as S
+        U0 = set(S)
+
+        # Min-heap for Dijkstra
+        heap: List[Tuple[float, int]] = [(self.dist[x], x)]
+        visited = set()
+
+        while heap and len(U0) < self.k + 1:
+            d_u, u = heapq.heappop(heap)
+            if d_u > self.dist[u] or u in visited:
+                continue
+            
+            visited.add(u)
+            U0.add(u)
+
+            # relax neighbors
+            for v, w in self.graph.get_neighbors(u):
+                alt = d_u + w
+
+                if alt <= self.dist[v] and alt < B:
+                    self.dist[v] = alt
+                    self.pred[v] = u
+                    heapq.heappush(heap, (alt, v))
+
+        # If U0 has at most k vertices → trivial case
+        if len(U0) <= self.k:
+            return B, U0
+
+        # Else choose new boundary B'
+        B_prime = max(self.dist[v] for v in U0)
+        U = {v for v in U0 if self.dist[v] < B_prime}
+        return B_prime, U

@@ -4,15 +4,28 @@ from collections import deque
 from typing import List, Tuple
 from BMSSP_algorithm.base import BaseShortestPath
 from BMSSP_algorithm.graph import Graph
-from BMSSP_algorithm.data_structures.Block import BNode
 from BMSSP_algorithm.data_structures.BBLL import BBLL
 
 class BMSSP(BaseShortestPath):
     def __init__(self, graph: Graph, source: int):
         super().__init__(graph, source)
-        N = self.graph.node_count
-        self.k = math.floor(math.pow(math.log2(N), 1/3))
-        self.t = math.floor(math.pow(math.log2(N), 2/3))
+
+        self.reset_state()
+
+        for v in range(self.graph.node_count):
+            # ensure every node has an entry even if isolated
+            self.dist[v] = float('inf')
+            self.pred[v] = None
+
+        if source >= self.graph.node_count:
+            self.graph.node_count = max(self.graph.node_count, source + 1)
+            self.dist[source] = 0.0
+        else:
+            self.dist[source] = 0.0
+
+        self.k = math.floor(math.pow(math.log2(self.graph.node_count), 1/3))
+        self.t = math.floor(math.pow(math.log2(self.graph.node_count), 2/3))
+        self.max_iterations = self.graph.node_count
 
     def validate(self) -> bool:
         return True
@@ -21,48 +34,19 @@ class BMSSP(BaseShortestPath):
         if not self.validate():
             return False
 
-        self.reset_state()
-        source = self.source
+        l0 = math.ceil(math.log2(self.graph.node_count) / self.t)
+        B0 = float('inf')
+        S0 = {self.source}
 
-        # initialize distances
-        for n in range(self.graph.node_count):
-            # ensure every node has an entry even if isolated
-            self.dist[n] = math.inf
-            self.pred[n] = None
-
-        if source >= self.graph.node_count:
-            self.graph.node_count = max(self.graph.node_count, source + 1)
-            self.dist[source] = 0.0
-        else:
-            self.dist[source] = 0.0
-
-        '''
-        heap: List[Tuple[float, int]] = [(0.0, source)]
-        visited = set()
-
-        while heap:
-            d_u, u = heapq.heappop(heap)
-            if d_u > self.dist.get(u, math.inf):
-                continue
-
-            self.iterations += 1
-            visited.add(u)
-
-            for v, w in self.graph.get_neighbors(u):
-                self.edge_relaxations += 1
-                alt = d_u + w
-                if alt < self.dist.get(v, math.inf):
-                    self.dist[v] = alt
-                    self.pred[v] = u
-                    self.successful_relaxations += 1
-                    heapq.heappush(heap, (alt, v))
-        '''
+        B_prime, U = self.bmssp(l0, B0, S0)
 
         return True    
 
     def find_pivots(self, B, S):
+        #print("--- FIND PIVOTS ---")
         W = set(S)
         W_prev = set(S)
+        #print(f"W = {W}, W_prev = {W_prev}, k = {self.k}")
 
         # k relaxations
         for _ in range(1, self.k + 1):
@@ -82,9 +66,13 @@ class BMSSP(BaseShortestPath):
             W |= W_curr
 
             if len(W) > self.k * len(S):
+                #print(f"W IS TOO LARGE")
+                #print(f"W = {W}")
                 return set(S), W
 
             W_prev = W_curr
+
+            #print(f"W = {W}, W_prev = {W_prev}")
 
         # Build forest F
         children = {u: [] for u in W}
@@ -119,10 +107,12 @@ class BMSSP(BaseShortestPath):
         # P = roots in S that have subtree ≥ k
         P = {u for u in S if u in subtree_size and subtree_size[u] >= self.k}
 
-        return P, W
+        return set(P), W
     
     def base_case(self, B, S):
         # S must be a singleton {x}
+        #print(f"BASE CASE: S = {S}")
+
         assert len(S) == 1
         x = next(iter(S))
 
@@ -158,3 +148,222 @@ class BMSSP(BaseShortestPath):
         B_prime = max(self.dist[v] for v in U0)
         U = {v for v in U0 if self.dist[v] < B_prime}
         return B_prime, U
+
+    def bmssp(self, l: int, B: float, S: set[int]) -> tuple[float, set[int]]:
+        """
+        Recursive BMSSP(l, B, S) implementing Algorithm 3.
+
+        Requirements (from the paper):
+          - |S| <= 2^l * t
+          - For every incomplete vertex x with d(x) < B, the shortest path
+            to x visits some complete vertex y in S.
+
+        Returns:
+          B_prime (float): new boundary B' <= B
+          U (set[int]): set of vertices discovered/completed in this call
+        """
+
+        #print(f"l = {l}")
+
+        # --- Base case ---
+        if l == 0:
+            B_prime, U = self.base_case(B, S)
+            #print(f"Base case: B_prime = {B_prime}, U = {U}")
+            return B_prime, U
+
+        # --- Recursive case ---
+        P, W = self.find_pivots(B, S)
+        M = int(math.pow(2, (l - 1) * self.t))
+
+        #print(f"Recursive case: B = {B}, S = {S}, P = {P}, W = {W}, M = {M}")
+
+        D = BBLL(M, B, self.graph.node_count)
+        #print("--- D ---")
+
+        # Insert all pivots
+        for x in P:
+            D.insert(x, self.dist[x])
+
+        #D.traverse()
+
+        if P:
+            B_prime_agg = min(self.dist[x] for x in P)
+        else:
+            B_prime_agg = B
+
+        U: set[int] = set()
+        U_threshold = self.k * math.pow(2, l * self.t)
+
+        #print(f"B_prime_agg = {B_prime_agg}, U_threshold = {U_threshold}")
+
+        iteration = 0
+
+        while len(U) < U_threshold and not D.is_empty() and iteration < self.max_iterations:
+            iteration += 1
+            Si, Bi = D.pull()
+            if len(Si) == 0:
+                break
+            #print(f"k = {self.k}, t = {self.t}, U_threshold = {U_threshold}")
+            #D.traverse()
+            #print(f"Si = {Si}, Bi = {Bi}")
+            Bi_prime, Ui = self.bmssp(l - 1, Bi, Si)
+            B_prime_agg = min(B_prime_agg, Bi_prime)
+            U |= Ui
+            #print(f"U = {U}, Bi_prime = {Bi_prime}, Ui = {Ui}")
+            K: set[tuple[int, float]] = set()
+
+            #print(f"Bi_prime = {Bi_prime}, Ui = {Ui}")
+            #print(f"B_prime_agg = {B_prime_agg}, U = {U}")
+
+            for u in Ui:
+                d_u = self.dist[u]
+                for v, w in self.graph.get_neighbors(u):
+                    alt = d_u + w
+
+                    if alt <= self.dist[v]:
+                        self.dist[v] = alt
+                        self.pred[v] = u
+
+                        #print(f"v = {v}, alt = {alt}, B = {B}, Bi = {Bi}, Bi_prime = {Bi_prime}")
+
+                        if Bi <= alt < B:
+                            D.insert(v, alt)
+                            #D.traverse()
+                        elif Bi_prime <= alt < Bi:
+                            K.add((v, alt))
+
+            prepend_records: set[tuple[int, float]] = K.copy()
+            for x in Si:
+                d_x = self.dist[x]
+                if Bi_prime <= d_x < Bi:
+                    prepend_records.add((x, d_x))
+
+            D.batch_prepend(prepend_records)
+            #D.traverse()
+
+        B_prime = min(B_prime_agg, B)
+        U_final = set(U)
+        for x in W:
+            if self.dist[x] < B_prime:
+                U_final.add(x)
+
+        #print(f"U_final = {U_final}")
+        return B_prime, U_final
+
+# ---------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------
+
+def build_chain_graph():
+    """
+    Graph A:
+      0 -> 1 (2)
+      1 -== 2 (3)
+      2 -> 3 (4)
+    """
+    g = Graph(directed=True)
+    g.node_count = 4
+    g.add_edge(0, 1, 2)
+    g.add_edge(1, 2, 3)
+    g.add_edge(2, 3, 4)
+    return g, 0  # graph, source
+
+
+def build_tree_graph():
+    """
+    Graph B (tree):
+           0
+         / | \
+        1  2  3
+        |
+        4
+    All weights = 1.
+    """
+    g = Graph(directed=True)
+    g.node_count = 5
+    g.add_edge(0, 1, 1)
+    g.add_edge(0, 2, 1)
+    g.add_edge(0, 3, 1)
+    g.add_edge(1, 4, 1)
+    return g, 0
+
+
+def build_cycle_graph():
+    """
+    Graph C (cycle):
+      0 -> 1 -== 2 -> 0
+    All weights = 1.
+    """
+    g = Graph(directed=True)
+    g.node_count = 3
+
+    g.add_edge(0, 1, 1)
+    g.add_edge(1, 2, 1)
+    g.add_edge(2, 0, 1)
+    return g, 0
+
+
+def build_paper_like_graph():
+    """
+    Graph D: a slightly richer DAG to see pivots / recursion.
+      0 -> 1 (1)
+      1 -== 2 (1)
+      1 -> 3 (2)
+      0 -> 4 (3)
+      4 -> 5 (1)
+    """
+    g = Graph(directed=True)
+    g.node_count = 6
+
+    g.add_edge(0, 1, 1)
+    g.add_edge(1, 2, 1)
+    g.add_edge(1, 3, 2)
+    g.add_edge(0, 4, 3)
+    g.add_edge(4, 5, 1)
+    return g, 0
+
+
+def print_graph(g: Graph):
+    print("Graph edges:")
+    for u in range(g.node_count):
+        for v, w in g.get_neighbors(u):
+            print(f"  {u} -> {v} (w={w})")
+
+
+def run_bmssp_on_graph(name: str, graph_builder):
+    print("\n" + "=" * 60)
+    print(f" DEMO: {name}")
+    print("=" * 60)
+
+    g, source = graph_builder()
+    print(f"Source: {source}")
+    print_graph(g)
+
+    # Initialize BMSSP
+    bm = BMSSP(g, source)
+
+    # Let run() do whatever initialization it currently does
+    bm.run()
+
+    print("\nDistances:")
+    for i in range(g.node_count):
+        print(f"  dist[{i}] = {bm.dist[i]}")
+
+    print("\nPredecessors:")
+    for i in range(g.node_count):
+        print(f"  pred[{i}] = {bm.pred[i]}")
+
+    print("=" * 60)
+    print()
+
+
+def main():
+    # Run all four demos
+    run_bmssp_on_graph("A: Simple Chain 0→1→2→3", build_chain_graph)
+    #run_bmssp_on_graph("B: Tree 0 with children and a leaf path", build_tree_graph)
+    run_bmssp_on_graph("C: Cycle 0→1→2→0", build_cycle_graph)
+    run_bmssp_on_graph("D: Paper-like Small DAG", build_paper_like_graph)
+
+
+if __name__ == "__main__":
+    main()

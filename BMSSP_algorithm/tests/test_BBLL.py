@@ -152,28 +152,33 @@ def test_pull_basic():
 
     S, x = bbll.pull()
 
-    # Pull should return exactly 3 smallest values
-    pulled_vals = sorted([v for (k, v) in S])
-    assert pulled_vals == sorted([5, 10, 25])[:3]
+    # pull() now returns a SET of KEYS, not (key,val) pairs
+    assert isinstance(S, set)
 
-    # x should be remaining minimum
+    # Find their values through nodes[]
+    pulled_vals = sorted([nodes[k].val for k in S])
+
+    # 3 smallest: 5, 10, 25
+    assert pulled_vals == [5, 10, 25]
+
+    # x = next global min after deletion
     assert x == bbll.find_global_min()
-
 
 def test_pull_all_values_small():
     bbll, nodes = make_bbll(M=5, B=100,
                             initial_vals={1: 30, 2: 20, 3: 10})
 
+    # Improve values
     bbll.insert(1, 5)
     bbll.insert(2, 3)
 
     S, x = bbll.pull()
 
-    # All three values are <= M so should all be returned
-    pulled = sorted([v for (k, v) in S])
-    assert pulled == [3, 5]
+    # All values ≤ M → return ALL keys in a SET
+    pulled_vals = sorted([nodes[k].val for k in S])
+    assert pulled_vals == [3, 5]   # only improved nodes in D1
 
-    # After deletion, everything is removed → next min is B
+    # After pull, everything removed → global min = B
     assert x == 100
 
 

@@ -1,11 +1,11 @@
-from BMSSP_algorithm.data_structures.Block import Block
+from BMSSP_algorithm.data_structures.Block import Block, BNode
 from BMSSP_algorithm.data_structures.RBT import RedBlackTree
 from BMSSP_algorithm.utils.MedianFinder import MedianFinder
 import random
 
 # Block-Based Linked List (BBLL)
 class BBLL:
-    def __init__(self, M, B, nodes):
+    def __init__(self, M, B, N):
         # D0: for batch prepends
         self.D0 = {}
         self.D0_bounds = RedBlackTree()
@@ -19,10 +19,12 @@ class BBLL:
         self.D1_bounds.insert(B)
 
         self.M = M  # maximum block size
-        self.nodes = nodes  # reference to BMSSP nodes
+        self.nodes = [BNode(v, float('inf')) for v in range(N)]
 
     def delete(self, key, val):
         """Delete key/value pair."""
+        #print("DELETE FROM D")
+        #print(f"key = {key}, val = {val}")
         D0_max_bound_node = self.D0_bounds._find_max(self.D0_bounds.root)
         if D0_max_bound_node is not None and val < D0_max_bound_node.value:
             bound = self.D0_bounds.search_bound(val)
@@ -67,6 +69,9 @@ class BBLL:
         node = self.nodes[key]
         old_val = node.val
 
+        #print("INSERT TO D")
+        #print(f"key = {key}, new_val = {new_val}, old_val = {old_val}")
+
         # Only improve
         if new_val >= old_val:
             return
@@ -95,6 +100,9 @@ class BBLL:
         Split a block into two when its size exceeds M.
         Uses the Block.find_median() function (O(M) expected time).
         """
+        #print("SPLIT IN D")
+        #print(f"block = {block}, old_bound = {old_bound}")
+
         if block.is_empty():
             return
 
@@ -121,7 +129,8 @@ class BBLL:
         # Step 3: Update D1 and bounds
         # Remove old bound from D1 and RedBlackTree
         del self.D1[old_bound]
-        self.D1_bounds.delete(old_bound)
+        if old_bound != self.B:
+            self.D1_bounds.delete(old_bound)
 
         # Define new bounds for the split blocks
         left_bound = median_value
@@ -129,7 +138,8 @@ class BBLL:
 
         # Step 4: Insert new bounds and blocks
         self.D1_bounds.insert(left_bound)
-        self.D1_bounds.insert(right_bound)
+        if old_bound != self.B:
+            self.D1_bounds.insert(right_bound)
         self.D1[left_bound] = left_block
         self.D1[right_bound] = right_block
 
@@ -141,9 +151,17 @@ class BBLL:
         each with ≤ ceil(M/2) elements.
         Time: O(L log(L/M)).
         """
+        #print("BATCH_PREPEND IN D")
+        #print(f"L = {L}")
+        
         n = len(L)
         if n == 0:
             return
+        
+        L_nodes = list()
+        for (v, d_v) in L:
+            self.nodes[v].val = d_v
+            L_nodes.append(self.nodes[v])
 
         def recursive_partition(nodes):
             """Recursively partition arr into blocks of size ≤ ceil(M/2)."""
@@ -155,14 +173,15 @@ class BBLL:
 
             # Find median and split around it
             median_value = MedianFinder.find_median([node.val for node in nodes])
-            left = [x for x in nodes if x.val < median_value]
-            right = [x for x in nodes if x.val >= median_value]
+            median_index = MedianFinder.find_median([node.key for node in nodes])
+            left = [x for x in nodes if (x.val < median_value or (x == median_value and x.key < median_index))]
+            right = [x for x in nodes if (x.val > median_value or (x == median_value and x.key >= median_index))]
 
             # Recursively build smaller blocks
             return recursive_partition(left) + recursive_partition(right)
 
         # Step 1: Split L into multiple blocks
-        blocks = recursive_partition(L)
+        blocks = recursive_partition(L_nodes)
 
         # Step 2: Prepend blocks to D0
         # Each block gets an upper bound equal to min value of the next block
@@ -180,11 +199,14 @@ class BBLL:
         Pull: Retrieve the smallest M values from D0 ∪ D1.
 
         Returns:
-            S_prime : list of (key, val) pairs – the smallest M elements
+            S_prime : set of (key, val) pairs – the smallest M elements
             x       : smallest remaining value in D0 ∪ D1 after deletion
         """
 
         M = self.M
+
+        #print("PULL FROM D")
+        #print(f"M = {M}")
 
         # -------------------------------
         # Step 1: Collect prefix blocks: S′0 from D0, S′1 from D1
@@ -198,12 +220,13 @@ class BBLL:
         # -------------------------------
         # Case 1: If all elements collected ≤ M → return all of them
         # -------------------------------
-        if total <= M:
+        if total < M:
             # delete all collected elements
             for key, val in S_all:
                 self.delete(key, val)
 
-            return S_all, self.B
+            S_set = {key for (key, val) in S_all}
+            return S_set, self.B
 
         # -------------------------------
         # Case 2: Need exactly M smallest values from S_all
@@ -247,8 +270,10 @@ class BBLL:
         # -------------------------------
         for key, val in S_prime:
             self.delete(key, val)
+
+        S_set = {key for (key, val) in S_prime}
   
-        return S_prime, self.find_global_min()
+        return S_set, self.find_global_min()
     
     def collect_from_D0(self, M):
         """Collect up to M values from prefix blocks in D0."""
@@ -284,6 +309,7 @@ class BBLL:
         if self.D0_bounds.root is not None:
             min_bound_node = self.D0_bounds._find_min(self.D0_bounds.root)
             if min_bound_node is not None:
+                #print(f"min bound: {self.D0[self.D0_bounds.root.value]}")
                 block = self.D0[min_bound_node.value]
                 if not block.is_empty():
                     candidate = min(candidate, block.get_min())
@@ -342,7 +368,7 @@ class BBLL:
                 current = current.next
                 if current == block.head:
                     break
-            D0_map[bound].append("(head)")
+            D0_map[bound].append("(head)" + tab)
 
         D1_map = {}
         for bound in D1_bounds:
@@ -354,7 +380,7 @@ class BBLL:
                 current = current.next
                 if current == block.head:
                     break
-            D1_map[bound].append("(head)")
+            D1_map[bound].append("(head)" + tab)
 
         for i in range(self.M + 1):
             nodes_line = "."
@@ -362,8 +388,8 @@ class BBLL:
             for bound in D0_bounds:
                 block_nodes = D0_map[bound]
                 if i < len(block_nodes):
-                    nodes_line += tab + block_nodes[i] + tab
-                    if block_nodes[i] != "(head)":
+                    nodes_line += tab + block_nodes[i]
+                    if block_nodes[i] != "(head)" + tab:
                         arrows_line += tab + "   |" + tab
                     else:
                         arrows_line += tab + tab
@@ -375,8 +401,8 @@ class BBLL:
             for bound in D1_bounds:
                 block_nodes = D1_map[bound]
                 if i < len(block_nodes):
-                    nodes_line += tab + block_nodes[i] + tab
-                    if block_nodes[i] != "(head)":
+                    nodes_line += tab + block_nodes[i]
+                    if block_nodes[i] != "(head)" + tab:
                         arrows_line += tab + "   |" + tab
                     else:
                         arrows_line += tab + tab
@@ -390,3 +416,16 @@ class BBLL:
 
         print(dots * (2 * num_D0_blocks + 1) + "." + tab + dots * (2 * num_D1_blocks + 1) + ".")
         print()
+
+    def is_empty(self):
+        if not self.D0_bounds.is_empty():
+            return False
+
+        # D1 should contain exactly 1 bound (sentinel B)
+        # If it has more than 1, D is not empty
+        if self.D1_bounds.get_size() > 1:
+            return False
+
+        # Check sentinel block is empty
+        sentinel_block = self.D1[self.B]
+        return sentinel_block.is_empty()

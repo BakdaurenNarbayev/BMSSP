@@ -35,6 +35,7 @@ class RedBlackTree:
     # constructor to initialize the RB tree
     def __init__(self):
         self.root = None
+        self._size = 0
 
     # function to search a value in RB Tree
     def search(self, value):
@@ -83,6 +84,8 @@ class RedBlackTree:
                         break
                     else:
                         curr_node = curr_node.right
+        
+        self._size += 1
         self.insert_fix(new_node)
 
     # Function to fix RB tree properties after insertion
@@ -122,6 +125,8 @@ class RedBlackTree:
         z = self.search(value)
         if not z:
             return
+        
+        self._size -= 1
 
         y = z
         y_original_color = y.color
@@ -316,3 +321,9 @@ class RedBlackTree:
             values = self._inorder_traversal_values(node.right, values)
 
         return values
+    
+    def get_size(self):
+        return self._size
+
+    def is_empty(self):
+        return self._size == 0

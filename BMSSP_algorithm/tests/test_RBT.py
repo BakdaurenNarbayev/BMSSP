@@ -192,3 +192,96 @@ def test_duplicate_insert():
     assert values == [10, 10]
 
     assert_red_black_properties(t)
+
+# ---------------------------
+# Size / is_empty tests
+# ---------------------------
+
+def test_empty_tree_size_and_is_empty():
+    t = RedBlackTree()
+    assert t.get_size() == 0
+    assert t.is_empty() is True
+
+
+def test_size_after_single_insert():
+    t = RedBlackTree()
+    t.insert(10)
+    assert t.get_size() == 1
+    assert t.is_empty() is False
+
+
+def test_size_after_multiple_inserts():
+    t = RedBlackTree()
+    values = [10, 5, 20, 1, 7, 15]
+
+    for i, v in enumerate(values):
+        t.insert(v)
+        assert t.get_size() == (i + 1)
+        assert t.is_empty() is False
+
+
+def test_size_after_deletes():
+    t = RedBlackTree()
+    values = [10, 5, 20, 1, 7, 15]
+
+    # insert all
+    for v in values:
+        t.insert(v)
+
+    assert t.get_size() == len(values)
+
+    # delete all one by one
+    for i, v in enumerate(values):
+        t.delete(v)
+        assert t.get_size() == len(values) - (i + 1)
+        assert t.is_empty() == (t.get_size() == 0)
+
+
+def test_delete_nonexistent_does_not_change_size():
+    t = RedBlackTree()
+    t.insert(10)
+    t.insert(5)
+
+    before = t.get_size()
+    t.delete(999)  # does nothing
+    assert t.get_size() == before
+    assert t.is_empty() is False
+
+
+def test_duplicate_inserts_increase_size():
+    t = RedBlackTree()
+    t.insert(10)
+    t.insert(10)  # allowed → inserts duplicate
+    t.insert(10)  # another duplicate
+    assert t.get_size() == 3
+    assert t.is_empty() is False
+
+    # delete two of them
+    t.delete(10)
+    assert t.get_size() == 2
+    t.delete(10)
+    assert t.get_size() == 1
+
+
+def test_size_with_random_operations():
+    import random
+    t = RedBlackTree()
+    ops = []
+    inserted = []
+
+    for _ in range(100):
+        op = random.choice(["insert", "delete"])
+        x = random.randint(0, 50)
+        ops.append((op, x))
+
+        if op == "insert":
+            t.insert(x)
+            inserted.append(x)
+        else:
+            t.delete(x)
+            if x in inserted:
+                inserted.remove(x)
+
+        # Check consistency
+        assert t.get_size() == len(inserted)
+        assert t.is_empty() == (len(inserted) == 0)

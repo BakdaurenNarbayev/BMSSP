@@ -199,7 +199,7 @@ class BMSSP(BaseShortestPath):
 
         iteration = 0
 
-        while len(U) < U_threshold and not D.is_empty() and iteration < self.max_iterations:
+        while len(U) < U_threshold and not D.is_empty():
             iteration += 1
             Si, Bi = D.pull()
             D._check_invariants()
@@ -210,6 +210,8 @@ class BMSSP(BaseShortestPath):
             #print(f"Si = {Si}, Bi = {Bi}")
             Bi_prime, Ui = self.bmssp(l - 1, Bi, Si)
             B_prime_agg = min(B_prime_agg, Bi_prime)
+            if Ui <= U:
+                break
             U |= Ui
             #print(f"U = {U}, Bi_prime = {Bi_prime}, Ui = {Ui}")
             K: set[tuple[int, float]] = set()

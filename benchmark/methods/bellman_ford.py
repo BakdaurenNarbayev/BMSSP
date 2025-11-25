@@ -6,22 +6,23 @@ class BellmanFord(BaseShortestPath):
     def validate(self) -> bool:
         # Bellman-Ford accepts negative weights; always valid
         return True
-
-    def run(self) -> bool:
+    
+    def setup(self):
         self.reset_state()
-        source = self.source
 
-        # initialize distances
+         # initialize distances
         for n in range(self.graph.node_count):
             self.dist[n] = math.inf
             self.pred[n] = None
 
-        if source >= self.graph.node_count:
-            self.graph.node_count = max(self.graph.node_count, source + 1)
-            self.dist[source] = 0.0
+        if self.source >= self.graph.node_count:
+            self.graph.node_count = max(self.graph.node_count, self.source + 1)
+            self.dist[self.source] = 0.0
         else:
-            self.dist[source] = 0.0
+            self.dist[self.source] = 0.0
 
+
+    def run(self) -> bool:
         edges = self.graph.get_all_edges()
         n = self.graph.node_count
 
@@ -39,8 +40,8 @@ class BellmanFord(BaseShortestPath):
                     self.pred[v] = u
                     self.successful_relaxations += 1
                     any_relaxed = True
-            if not any_relaxed:
-                break
+            # if not any_relaxed:
+            #     break
 
         # final pass to detect negative cycles reachable from source
         self.iterations += 1

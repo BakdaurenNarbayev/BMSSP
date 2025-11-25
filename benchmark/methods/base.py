@@ -59,3 +59,8 @@ class BaseShortestPath(ABC):
     def validate(self) -> bool:
         """Return True if graph satisfies preconditions for algorithm (e.g., Dijkstra: no negative weights)."""
         raise NotImplementedError
+
+    @abstractmethod
+    def setup(self) -> None:
+        """Setup the algorithm for computing the shortest path"""
+        raise NotImplementedError

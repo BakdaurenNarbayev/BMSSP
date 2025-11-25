@@ -4,7 +4,7 @@ from benchmark.utils.plot import plot_results
 from typing import Any, Dict, List, Optional, Tuple
 from benchmark.utils.benchmark import ShortestPathBenchmark
 from benchmark.utils.process_graph import load_graph_from_file
-from benchmark.utils.generate_graphs import generate_random_graph
+from benchmark.utils.generate_graphs import generate_complete_graph, generate_random_graph
 from benchmark.utils.misc import save_benchmark_results_json, get_file_paths_to_save
 
 
@@ -23,17 +23,19 @@ def print_benchmark_results(
     alg_names = list(results.keys())
     metric_order = [
         "run_sec_median",
-        "iterations_median",
-        "edge_relaxations_median",
-        "successful_relaxations_median",
-        "negative_cycle_detected",
+        "peak_memory_median",
+        # "iterations_median",
+        # "edge_relaxations_median",
+        # "successful_relaxations_median",
+        # "negative_cycle_detected",
     ]
 
     metric_units = {
         "run_sec_median": "s",
-        "iterations_median": "it",
-        "edge_relaxations_median": "relax",
-        "successful_relaxations_median": "relax",
+        "peak_memory_median": "byte",
+        # "iterations_median": "it",
+        # "edge_relaxations_median": "relax",
+        # "successful_relaxations_median": "relax",
     }
 
     rows = []
@@ -104,8 +106,8 @@ def demo_run(
     seed = 42
     start_node_idx = 0
 
-    num_nodes = 50_000
-    num_edges = 100_000
+    num_nodes = 100
+    num_edges = 200
 
     print(f"Generating a graph with {num_nodes:,} nodes and {num_edges:,}...")
     graph = generate_random_graph(num_nodes, num_edges, seed=seed)
@@ -171,6 +173,8 @@ def run_custom_graph(
 def scaling_benchmark(
     min_nodes: int = 1_000,
     max_nodes: int = 200_000,
+    max_in_degree: int = 2,
+    max_out_degree: int = 2,
     num_steps: int = 8,
     edge_ratios: List[float] = [1.0],
     algos_to_test: Optional[List[str]] = None,
@@ -200,6 +204,7 @@ def scaling_benchmark(
         "edge_relaxations_median",
         "successful_relaxations_median",
         "negative_cycle_detected",
+        "peak_memory_median",
     ]
 
     for edge_ratio in edge_ratios:
@@ -208,7 +213,8 @@ def scaling_benchmark(
         edge_ratio_results = {}
         for node_size in nodes_sizes:
             print(f"\tBenchmarking node size: {node_size:,}")
-            graph = generate_random_graph(node_size, int(node_size * edge_ratio), seed)
+            graph = generate_random_graph(node_size, int(node_size * edge_ratio), seed, max_out_degree=max_out_degree, max_in_degree=max_in_degree)
+            # graph = generate_complete_graph(node_size)
 
             current_algos_to_test = algos_to_test.copy() if algos_to_test else None
             for structure_name, max_allowed_size in exclude_algos_above or []:
@@ -259,6 +265,8 @@ def scaling_benchmark(
 def run_scaling_benchmark(
     min_nodes: int = 1_000,
     max_nodes: int = 200_000,
+    max_in_degree: int = 2,
+    max_out_degree: int = 2,
     num_steps: int = 8,
     edge_ratios: List[float] = [1.0],
     algos_to_test: Optional[List[str]] = None,
@@ -277,6 +285,8 @@ def run_scaling_benchmark(
     results, node_sizes = scaling_benchmark(
         min_nodes=min_nodes,
         max_nodes=max_nodes,
+        max_in_degree=max_in_degree,
+        max_out_degree=max_out_degree,
         num_steps=num_steps,
         edge_ratios=edge_ratios,
         algos_to_test=algos_to_test,
@@ -306,7 +316,7 @@ def run_scaling_benchmark(
     print("\nGenerating plots...")
     if save_result_path is not None:
         file_path_json, file_path_pdf = get_file_paths_to_save(save_result_path)
-        plot_results(results, node_sizes, edge_ratios, file_path_pdf)
+        plot_results(results, node_sizes, edge_ratios, save_path=file_path_pdf)
         save_benchmark_results_json(file_path_json, results, node_sizes, edge_ratios)
         return file_path_json, file_path_pdf
     else:

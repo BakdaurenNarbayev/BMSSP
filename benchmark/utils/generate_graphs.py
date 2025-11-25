@@ -53,6 +53,8 @@ def generate_random_graph(
     directed: bool = True,
     min_weight: float = 1,
     max_weight: float = 10,
+    max_out_degree: int = 2,
+    max_in_degree: int = 2,
     seed: Optional[int] = None,
 ) -> Graph:
     """Generate a random graph with specified nodes and edges"""
@@ -60,14 +62,35 @@ def generate_random_graph(
         rng = random.Random(seed)
     else:
         rng = random
+    
+    if directed:
+        theoretical_max = num_nodes * (num_nodes - 1)
+    else:
+        theoretical_max = num_nodes * (num_nodes - 1) // 2
+    
+    if max_out_degree != -1:
+        theoretical_max = min(theoretical_max, num_nodes * max_out_degree)
+    if max_in_degree != -1:
+        theoretical_max = min(theoretical_max, num_nodes * max_in_degree)
+    
+    max_possible_edges = theoretical_max
+
+    if num_edges > max_possible_edges:
+        print(f"\t\tRequested {num_edges} edges exceeds maximum possible {max_possible_edges} edges.",
+             f"\n\t\tReducing the number of edges to {max_possible_edges}.")
+        num_edges = max_possible_edges
 
     graph = Graph(directed=directed)
+    out_degrees = {i: 0 for i in range(num_nodes)}
+    in_degrees = {i: 0 for i in range(num_nodes)}
 
     # Ensure connectivity with a spanning tree first
     for i in range(1, num_nodes):
         parent = rng.randint(0, i - 1)
         weight = rng.uniform(min_weight, max_weight)
         graph.add_edge(parent, i, weight)
+        out_degrees[parent] += 1
+        in_degrees[i] += 1
 
     # Add remaining random edges
     edges_added = num_nodes - 1
@@ -79,6 +102,13 @@ def generate_random_graph(
         to_node = rng.randint(0, num_nodes - 1)
 
         if from_node != to_node:
+            if max_out_degree != -1 and out_degrees[from_node] >= max_out_degree:
+                attempts += 1
+                continue
+            if max_in_degree != -1 and in_degrees[to_node] >= max_in_degree:
+                attempts += 1
+                continue
+
             # Check if edge already exists
             if not any(n == to_node for n, _ in graph.get_neighbors(from_node)):
                 weight = rng.uniform(min_weight, max_weight)
@@ -86,6 +116,10 @@ def generate_random_graph(
                 edges_added += 1
 
         attempts += 1
+
+    if attempts >= max_attempts:
+        print("\t\tFailed to generate appropriate graph due to reaching the maximum attempt number.",
+             f"\n\t\tGenerated a graph with {graph.node_count} nodes and {graph.edge_count} edges.")
 
     return graph
 

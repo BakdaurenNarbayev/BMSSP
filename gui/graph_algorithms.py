@@ -65,6 +65,7 @@ def run_shortest_path_algo(
         PathResult containing distances, predecessors, execution time, iterations, and name
     """
     algo = algo_class(graph, start)
+    algo.setup()
 
     start_time = time.perf_counter()
     algo.run()

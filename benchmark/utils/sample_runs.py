@@ -295,6 +295,14 @@ def run_scaling_benchmark(
         seed=seed,
     )
 
+    chosen_idx = len(node_sizes) - 1
+    if exclude_algos_above:
+        min_excluded_nodes = min(int(float(nodes)) for _, nodes in exclude_algos_above)
+        for i in range(len(node_sizes) - 1, -1, -1):
+            if node_sizes[i] <= min_excluded_nodes:
+                chosen_idx = i
+                break
+
     per_size_results = {}
     for struct_name, metrics in results.items():
         per_size_metrics = {}
@@ -302,7 +310,7 @@ def run_scaling_benchmark(
             if isinstance(v, list) and all(isinstance(inner, list) for inner in v):
                 last_edge_ratio_values = v[-1]
                 per_size_metrics[k] = (
-                    last_edge_ratio_values[-1] if last_edge_ratio_values else None
+                    last_edge_ratio_values[chosen_idx] if last_edge_ratio_values else None
                 )
             else:
                 per_size_metrics[k] = v
@@ -310,7 +318,7 @@ def run_scaling_benchmark(
 
     print_benchmark_results(
         per_size_results,
-        title=f"Results for the Graph with {node_sizes[-1]:,} Node and {int(node_sizes[-1] * edge_ratios[-1]):,} Edges",
+        title=f"Results for the Graph with {node_sizes[chosen_idx]:,} Node and {int(node_sizes[chosen_idx] * edge_ratios[-1]):,} Edges",
     )
 
     print("\nGenerating plots...")

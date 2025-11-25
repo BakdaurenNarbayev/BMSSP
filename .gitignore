@@ -218,3 +218,7 @@ __marimo__/
 # venv
 bmssp/
 bmssp/**
+
+# results
+results/
+results/** */

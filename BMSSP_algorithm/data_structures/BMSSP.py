@@ -183,6 +183,7 @@ class BMSSP(BaseShortestPath):
         # Insert all pivots
         for x in P:
             D.insert(x, self.dist[x])
+            D._check_invariants()
 
         #D.traverse()
 
@@ -201,6 +202,7 @@ class BMSSP(BaseShortestPath):
         while len(U) < U_threshold and not D.is_empty() and iteration < self.max_iterations:
             iteration += 1
             Si, Bi = D.pull()
+            D._check_invariants()
             if len(Si) == 0:
                 break
             #print(f"k = {self.k}, t = {self.t}, U_threshold = {U_threshold}")
@@ -228,6 +230,7 @@ class BMSSP(BaseShortestPath):
 
                         if Bi <= alt < B:
                             D.insert(v, alt)
+                            D._check_invariants()
                             #D.traverse()
                         elif Bi_prime <= alt < Bi:
                             K.add((v, alt))
@@ -239,6 +242,7 @@ class BMSSP(BaseShortestPath):
                     prepend_records.add((x, d_x))
 
             D.batch_prepend(prepend_records)
+            D._check_invariants()
             #D.traverse()
 
         B_prime = min(B_prime_agg, B)
@@ -359,10 +363,10 @@ def run_bmssp_on_graph(name: str, graph_builder):
 
 def main():
     # Run all four demos
-    #run_bmssp_on_graph("A: Simple Chain 0→1→2→3", build_chain_graph)
+    run_bmssp_on_graph("A: Simple Chain 0→1→2→3", build_chain_graph)
     run_bmssp_on_graph("B: Tree 0 with children and a leaf path", build_tree_graph)
-    #run_bmssp_on_graph("C: Cycle 0→1→2→0", build_cycle_graph)
-    #run_bmssp_on_graph("D: Paper-like Small DAG", build_paper_like_graph)
+    run_bmssp_on_graph("C: Cycle 0→1→2→0", build_cycle_graph)
+    run_bmssp_on_graph("D: Paper-like Small DAG", build_paper_like_graph)
 
 
 if __name__ == "__main__":

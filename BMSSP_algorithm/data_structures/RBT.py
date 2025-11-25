@@ -55,14 +55,16 @@ class RedBlackTree:
     
     # function to search a node which has a value just above the value of interest
     def search_bound(self, value):
-        curr_node = self.root
-        candidate = float('inf')
-        while curr_node != self.NIL:
-            if curr_node.value > value:
-                candidate = curr_node.value
-                curr_node = curr_node.left
+        curr = self.root
+        candidate = None
+
+        while curr != self.NIL:
+            if curr.value > value:
+                candidate = curr.value
+                curr = curr.left
             else:
-                curr_node = curr_node.right
+                curr = curr.right
+
         return candidate
 
     # function to insert a node in RB Tree, similar to BST insertion
@@ -330,13 +332,16 @@ class RedBlackTree:
         self._inorder_traversal(node.right)
 
     # function to return values in inorder traversal
-    def _inorder_traversal_values(self, node, values):
-        if node is None or node == self.NIL:
-            return values
-        values = self._inorder_traversal_values(node.left, values)
-        values.append(node.value)
-        values = self._inorder_traversal_values(node.right, values)
-        return values
+    def _inorder_traversal_values(self):
+        result = []
+        def _walk(node):
+            if node == self.NIL:
+                return
+            _walk(node.left)
+            result.append(node.value)
+            _walk(node.right)
+        _walk(self.root)
+        return result
     
     def get_size(self):
         return self._size

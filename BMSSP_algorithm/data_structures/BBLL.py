@@ -32,6 +32,12 @@ class BBLL:
                 bound = D0_max_bound_node.value
 
             if bound is None or bound not in self.D0:
+                self.traverse()
+                print(f"self.D0_bounds.root.value = {self.D0_bounds.root.value}")
+                print(f"D0_max_bound_node.value = {D0_max_bound_node.value}")
+                for bound in self.D0:
+                    print(f"bound = {bound}")
+                print(f"key = {key}, val = {val}")
                 print(f"[Warning] D0: bound {bound} not found for value {val}.")
                 return
 

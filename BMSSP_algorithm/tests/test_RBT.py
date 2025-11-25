@@ -1,5 +1,5 @@
 import pytest
-from  BMSSP_algorithm.data_structures.RBT import RedBlackTree, RBNode
+from BMSSP_algorithm.data_structures.RBT import RedBlackTree, RBNode
 
 
 # ---------------------------
@@ -13,33 +13,50 @@ def assert_inorder_sorted(tree):
 
 
 def assert_red_black_properties(tree):
-    if tree.root is None:
+    """
+    Validates standard RBT properties adapted for NIL-sentinel trees:
+    - Root is black
+    - No red node has a red child
+    - All root-to-leaf paths have equal black height
+    """
+
+    # Property 0: Empty tree → OK
+    if tree.root is tree.NIL:
+        assert tree.get_size() == 0
         return
 
     # Property 1: root is black
     assert tree.root.color == "black"
 
+    NIL = tree.NIL
+
     # Property 2: red node cannot have red children
     def check_no_red_red(node):
-        if node is None:
-            return True
+        if node is NIL:
+            return
+
         if node.color == "red":
-            if node.left:
+            # both children must be black if not NIL
+            if node.left != NIL:
                 assert node.left.color == "black"
-            if node.right:
+            if node.right != NIL:
                 assert node.right.color == "black"
+
         check_no_red_red(node.left)
         check_no_red_red(node.right)
 
     check_no_red_red(tree.root)
 
-    # Property 3: all paths have same black-height
+    # Property 3: all paths from a node to NIL leaves have same black-height
     def black_height(node):
-        if node is None:
-            return 1
+        if node is NIL:
+            return 1  # NIL counts as one black node
+
         left_h = black_height(node.left)
         right_h = black_height(node.right)
         assert left_h == right_h  # must match
+
+        # Add this node's black contribution
         return left_h + (1 if node.color == "black" else 0)
 
     black_height(tree.root)
@@ -161,7 +178,6 @@ def test_delete_all():
         t.delete(v)
         assert t.search(v) is None
         assert_inorder_sorted(t)
-        # tree may become empty; properties still hold
         assert_red_black_properties(t)
 
 

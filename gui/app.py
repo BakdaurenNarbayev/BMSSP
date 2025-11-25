@@ -252,7 +252,7 @@ class PathfindingTUI(App):
 
     def open_config_file(self):
         """Open the benchmark configuration file"""
-        config_file = "H:/BMSSP repo/BMSSP/benchmark/config/main.yaml"
+        config_file = "config/main.yaml"
 
         if os.path.exists(config_file):
             import subprocess, platform

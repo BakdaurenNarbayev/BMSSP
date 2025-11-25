@@ -11,31 +11,32 @@ class Dijkstra(BaseShortestPath):
             if w < 0:
                 return False
         return True
-
-    def run(self) -> bool:
-        if not self.validate():
-            return False
-
+    
+    def setup(self):
         self.reset_state()
-        source = self.source
 
-        # initialize distances
+         # initialize distances
         for n in range(self.graph.node_count):
-            # ensure every node has an entry even if isolated
             self.dist[n] = math.inf
             self.pred[n] = None
 
-        if source >= self.graph.node_count:
-            self.graph.node_count = max(self.graph.node_count, source + 1)
-            self.dist[source] = 0.0
+        if self.source >= self.graph.node_count:
+            self.graph.node_count = max(self.graph.node_count, self.source + 1)
+            self.dist[self.source] = 0.0
         else:
-            self.dist[source] = 0.0
+            self.dist[self.source] = 0.0
 
-        heap: List[Tuple[float, int]] = [(0.0, source)]
+
+    def run(self) -> bool:
+        heap: List[Tuple[float, int]] = [(0.0, self.source)]
         visited = set()
 
         while heap:
             d_u, u = heapq.heappop(heap)
+            
+            if u in visited:
+                continue
+
             if d_u > self.dist.get(u, math.inf):
                 continue
 

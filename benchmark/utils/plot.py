@@ -9,6 +9,7 @@ def plot_results(
     results: Dict[str, Dict[str, Any]],
     node_sizes: List[int],
     edge_ratios: List[float],
+    log_scale: bool = True,
     save_path: Optional[str] = None,
     title: Optional[str] = None,
 ):
@@ -23,16 +24,18 @@ def plot_results(
 
     metric_keys_order = [
         "run_sec_median",
-        "iterations_median",
-        "edge_relaxations_median",
-        "successful_relaxations_median",
+        "peak_memory_median",
+        # "iterations_median",
+        # "edge_relaxations_median",
+        # "successful_relaxations_median",
     ]
 
     metric_titles = [
         "Execution Time (s)",
-        "Iterations",
-        "Edge Relaxations",
-        "Successful Relaxations",
+        "Peak Memory (bytes)",
+        # "Iterations",
+        # "Edge Relaxations",
+        # "Successful Relaxations",
     ]
 
     metrics = [m for m in metric_keys_order if any(m in results[a] for a in alg_names)]
@@ -103,8 +106,10 @@ def plot_results(
 
         if scale_run:
             ax.legend()
-            ax.set_yscale("log")
-            ax.set_xscale("log")
+
+            if log_scale:
+                ax.set_yscale("log")
+                ax.set_xscale("log")
 
     for k in range(n_metrics, len(axes)):
         axes[k].axis("off")

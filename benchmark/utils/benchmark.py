@@ -2,6 +2,7 @@ import gc
 import time
 import statistics
 
+import tracemalloc
 from typing import Dict, Any, List, Optional
 from benchmark.methods.dijkstra import Dijkstra
 from benchmark.datastructures.graph import Graph
@@ -22,7 +23,8 @@ class ShortestPathBenchmark:
       - iterations
       - edge_relaxations
       - successful_relaxations
-      - has_negative_cycle (Bellman-Ford only)
+      - has_negative_cycle
+      - peak_memory_bytes (peak memory usage during execution)
     """
 
     def __init__(
@@ -67,10 +69,20 @@ class ShortestPathBenchmark:
                 G.add_edge(u, v, w)
 
         algo = alg_cls(G, self.start)
+        ok = algo.validate()
+        algo.setup()
 
-        t0 = time.perf_counter_ns()
-        ok = algo.run()
-        run_ns = time.perf_counter_ns() - t0
+        if ok:
+            t0 = time.perf_counter_ns()
+            tracemalloc.start()
+            ok = algo.run()
+            _, peak = tracemalloc.get_traced_memory()
+            tracemalloc.stop()
+            run_ns = time.perf_counter_ns() - t0
+            peak_memory_bytes = peak
+        else: 
+            run_ns = -1
+            peak_memory_bytes = -1
 
         return {
             "run_ns": run_ns,
@@ -79,6 +91,7 @@ class ShortestPathBenchmark:
             "edge_relaxations": getattr(algo, "edge_relaxations", None),
             "successful_relaxations": getattr(algo, "successful_relaxations", None),
             "has_negative_cycle": getattr(algo, "has_negative_cycle", False),
+            "peak_memory_bytes": peak_memory_bytes,
         }
 
     def _aggregate(self, results: List[Dict[str, Any]]) -> Dict[str, Any]:
@@ -94,6 +107,7 @@ class ShortestPathBenchmark:
             for r in results
             if r["successful_relaxations"] is not None
         ]
+        memory = [r["peak_memory_bytes"] for r in results]
         has_neg = any(r["has_negative_cycle"] for r in results)
 
         return {
@@ -105,6 +119,7 @@ class ShortestPathBenchmark:
                 statistics.median(success_relax) if success_relax else None
             ),
             "negative_cycle_detected": has_neg,
+            "peak_memory_median": statistics.median(memory)
         }
 
     def run(self) -> Dict[str, Dict[str, Any]]:

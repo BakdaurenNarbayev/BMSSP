@@ -7,10 +7,7 @@ import random, math
 class BBLL:
     def __init__(self, M, B, N):
         # Redefine max bound
-        self.multiplier = math.pow(10, math.floor(math.log10(N) + 1))
         self.B = B
-        if B != float('inf'):
-            self.B = (B + 1) * self.multiplier
 
         # D0: for batch prepends
         self.D0 = {}
@@ -40,7 +37,7 @@ class BBLL:
 
         D0_max_bound_node = self.D0_bounds._find_max(self.D0_bounds.root)
         if D0_max_bound_node is not None and val < D0_max_bound_node.value:
-            bound = self.D0_bounds.search_bound((val + 1) * self.multiplier + key)
+            bound = self.D0_bounds.search_bound(val)
             if bound is None:
                 bound = D0_max_bound_node.value
                 
@@ -66,7 +63,7 @@ class BBLL:
             return
 
         # pair is in D1
-        bound = self.D1_bounds.search_bound((val + 1) * self.multiplier + key)
+        bound = self.D1_bounds.search_bound(val)
         if bound is None:
             max_node = self.D1_bounds._find_max(self.D1_bounds.root)
             bound = max_node.value if max_node is not None else None
@@ -113,7 +110,7 @@ class BBLL:
         node.val = new_val
 
         # Find appropriate bound; if no bound > new_val, use the max bound
-        bound = self.D1_bounds.search_bound((new_val + 1) * self.multiplier + key)
+        bound = self.D1_bounds.search_bound(new_val)
         if bound is None:
             max_node = self.D1_bounds._find_max(self.D1_bounds.root)
             bound = max_node.value if max_node is not None else self.B
@@ -141,7 +138,7 @@ class BBLL:
             return
 
         # Step 1: Find median value using Block's O(M) method
-        median_value = (block.find_median() + 1) * self.multiplier + block.find_median_index()
+        median_value = block.find_median()
 
         # Step 2: Partition all nodes into two new blocks
         left_block = Block()
@@ -151,7 +148,7 @@ class BBLL:
         while current_node:
             next_node = current_node.next  # Save next pointer before reassignment
 
-            if (current_node.val + 1) * self.multiplier + current_node.key < median_value:
+            if current_node.val < median_value:
                 left_block.insert(current_node)
             else:
                 right_block.insert(current_node)
@@ -207,16 +204,16 @@ class BBLL:
         def recursive_partition(nodes):
             """Recursively partition arr into blocks of size ≤ ceil(M/2)."""
             if len(nodes) <= self.M:
+                sorted_nodes = sorted(nodes, key=lambda node: node.val)
                 block = Block()
-                for node in nodes:
+                for node in sorted_nodes:
                     block.insert(node)
                 return [block]
 
             # Find median and split around it
             median_value = MedianFinder.find_median([node.val for node in nodes])
-            median_index = MedianFinder.find_median([node.key for node in nodes])
-            left = [x for x in nodes if (x.val < median_value or (x.val == median_value and x.key < median_index))]
-            right = [x for x in nodes if (x.val > median_value or (x.val == median_value and x.key >= median_index))]
+            left = [x for x in nodes if x.val < median_value]
+            right = [x for x in nodes if x.val >= median_value]
 
             # Recursively build smaller blocks
             return recursive_partition(left) + recursive_partition(right)
@@ -228,13 +225,9 @@ class BBLL:
         # Each block gets an upper bound equal to min value of the next block
         for i in range(len(blocks) - 1, -1, -1): # in reverse order
             if i == len(blocks) - 1:
-                min_bound, min_bound_idx, is_D1 = self.find_global_min()
-                if is_D1:
-                    bound = (min_bound + 2) * self.multiplier - 1
-                else:
-                    bound = (min_bound + 1) * self.multiplier + min_bound_idx
+                bound = self.find_global_min()
             else:
-                bound = (blocks[i + 1].get_min() + 1) * self.multiplier + blocks[i + 1].find_candidate_index()
+                bound = blocks[i + 1].get_min()
             
             self.D0[bound] = blocks[i]
             self.D0_bounds.insert(bound)
@@ -277,8 +270,7 @@ class BBLL:
             S_set = {key for (key, val) in S_all}
             #print(self.D0_bounds._inorder_traversal_values())
             #self.traverse()
-            B = int(self.B / self.multiplier) if self.B != float('inf') else float('inf')
-            return S_set, B
+            return S_set, self.B
 
         # -------------------------------
         # Case 2: Need exactly M smallest values from S_all
@@ -328,8 +320,7 @@ class BBLL:
         #print(self.D0_bounds._inorder_traversal_values())
         #self.traverse()
   
-        min_bound, min_bound_idx, is_D1 = self.find_global_min()
-        return S_set, min_bound
+        return S_set, self.find_global_min()
     
     def collect_from_D0(self, M):
         """Collect up to M values from prefix blocks in D0."""
@@ -361,10 +352,7 @@ class BBLL:
         """Return the smallest value in D0 ∪ D1 in O(M) time."""
         #print(self.D0_bounds._inorder_traversal_values())
         #self.traverse()
-        B = int(self.B / self.multiplier) if self.B != float('inf') else float('inf')
-        candidate = B
-        candidate_idx = self.multiplier - 1
-        is_D1 = False
+        candidate = self.B
 
         # Check D0's smallest bound
         if self.D0_bounds.root is not None:
@@ -377,7 +365,6 @@ class BBLL:
                     potential = block.get_min()
                     if potential < candidate:
                         candidate = potential
-                        candidate_idx = block.find_candidate_index()
 
         # Check D1's smallest bound
         if self.D1_bounds.root is not None:
@@ -388,12 +375,10 @@ class BBLL:
                     potential = block.get_min()
                     if potential < candidate:
                         candidate = potential
-                        candidate_idx = block.find_candidate_index()
-                        is_D1 = True
 
         #print(self.D0_bounds._inorder_traversal_values())
         #self.traverse()
-        return candidate, candidate_idx, is_D1
+        return candidate
 
     def traverse(self):
         """Pretty-#print the structure of D0 and D1 in a clean, readable format."""

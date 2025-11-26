@@ -23,7 +23,7 @@ class StatsDisplay(Static):
             content = []
             content.append(f"Algorithm:       {result.algorithm}")
             content.append(f"Execution Time:  {result.execution_time * 1000:.3f} ms")
-            content.append(f"Operations:      {result.operations:,}")
+            # content.append(f"Operations:      {result.operations:,}")
             nodes_reached = sum(
                 1 for d in result.distances.values() if d != float("inf")
             )

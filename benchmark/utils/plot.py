@@ -86,54 +86,81 @@ def plot_results(
                     # Check if this data is incomplete (shorter than max)
                     has_missing = len(vals) < max_len
                     
-                    if has_missing and len(vals) >= 2:
+                    if has_missing and len(vals) >= 2 and (alg != "bmssp" and metric != "peak_memory_median"):
                         # Use available data points
                         valid_x = node_sizes[:len(vals)]
                         valid_y = vals
                         
                         # Transform for log scale if needed
                         if log_scale:
-                            valid_x_log = np.log(valid_x)
-                            valid_y_log = np.log(valid_y)
-                            
-                            # Try polynomial degrees 1-3
-                            best_degree = 1
-                            best_score = -np.inf
-                            for degree in range(1, min(4, len(valid_x))):
-                                try:
-                                    coeffs = np.polyfit(valid_x_log, valid_y_log, degree)
-                                    y_pred = np.polyval(coeffs, valid_x_log)
-                                    score = -np.mean((valid_y_log - y_pred) ** 2)
-                                    if score > best_score:
-                                        best_score = score
-                                        best_degree = degree
-                                except:
-                                    pass
-                            
-                            # Fit with best degree
-                            coeffs = np.polyfit(valid_x_log, valid_y_log, best_degree)
-                            
-                            # Extrapolate only the missing part
-                            missing_x_log = np.log(node_sizes[len(vals):max_len])
-                            missing_y_log = np.polyval(coeffs, missing_x_log)
-                            missing_vals = np.exp(missing_y_log)
+                            if alg != "bmssp": 
+                                valid_x_log = np.log(valid_x)
+                                valid_y_log = np.log(valid_y)
+                                
+                                # Try polynomial degrees 1-3
+                                best_degree = 1
+                                best_score = -np.inf
+                                for degree in range(1, min(4, len(valid_x))):
+                                    try:
+                                        coeffs = np.polyfit(valid_x_log, valid_y_log, degree)
+                                        y_pred = np.polyval(coeffs, valid_x_log)
+                                        score = -np.mean((valid_y_log - y_pred) ** 2)
+                                        if score > best_score:
+                                            best_score = score
+                                            best_degree = degree
+                                    except:
+                                        pass
+                                
+                                # Fit with best degree
+                                coeffs = np.polyfit(valid_x_log, valid_y_log, best_degree)
+                                
+                                # Extrapolate only the missing part
+                                missing_x_log = np.log(node_sizes[len(vals):max_len])
+                                missing_y_log = np.polyval(coeffs, missing_x_log)
+                                missing_vals = np.exp(missing_y_log)
+                            else:
+                                valid_x_log = np.log(valid_x)
+                                valid_y_log = np.log(valid_y)
+
+                                # Fit y = a * n * log(n) in log space
+                                # log(y) = log(a) + log(n * log(n))
+                                # log(y) = log(a) + log(n) + log(log(n))
+                                valid_x_nlogn = valid_x * np.log(valid_x)
+                                valid_x_nlogn_log = np.log(valid_x_nlogn)
+
+                                # Simple linear fit: log(y) = m * log(n*log(n)) + b
+                                coeffs = np.polyfit(valid_x_nlogn_log, valid_y_log, 1)
+
+                                # Extrapolate only the missing part
+                                missing_x = node_sizes[len(vals):max_len]
+                                missing_x_nlogn = missing_x * np.log(missing_x)
+                                missing_x_nlogn_log = np.log(missing_x_nlogn)
+                                missing_y_log = np.polyval(coeffs, missing_x_nlogn_log)
+                                missing_vals = np.exp(missing_y_log)
                         else:
                             # Linear space interpolation
-                            best_degree = 1
-                            best_score = -np.inf
-                            for degree in range(1, min(4, len(valid_x))):
-                                try:
-                                    coeffs = np.polyfit(valid_x, valid_y, degree)
-                                    y_pred = np.polyval(coeffs, valid_x)
-                                    score = -np.mean((np.array(valid_y) - y_pred) ** 2)
-                                    if score > best_score:
-                                        best_score = score
-                                        best_degree = degree
-                                except:
-                                    pass
-                            
-                            coeffs = np.polyfit(valid_x, valid_y, best_degree)
-                            missing_vals = np.polyval(coeffs, node_sizes[len(vals):max_len])
+                            if alg != "bmspp":
+                                best_degree = 1
+                                best_score = -np.inf
+                                for degree in range(1, min(4, len(valid_x))):
+                                    try:
+                                        coeffs = np.polyfit(valid_x, valid_y, degree)
+                                        y_pred = np.polyval(coeffs, valid_x)
+                                        score = -np.mean((np.array(valid_y) - y_pred) ** 2)
+                                        if score > best_score:
+                                            best_score = score
+                                            best_degree = degree
+                                    except:
+                                        pass
+                                
+                                coeffs = np.polyfit(valid_x, valid_y, best_degree)
+                                missing_vals = np.polyval(coeffs, node_sizes[len(vals):max_len])
+                            else:
+                                valid_x_nlogn = valid_x * np.log(valid_x)
+                                coeffs = np.polyfit(valid_x_nlogn, valid_y, 1)
+                                missing_x = node_sizes[len(vals):max_len]
+                                missing_x_nlogn = missing_x * np.log(missing_x)
+                                missing_vals = np.polyval(coeffs, missing_x_nlogn)
                         
                         if gray_idx < len(gray_shades):
                             gray_color = gray_shades[gray_idx]

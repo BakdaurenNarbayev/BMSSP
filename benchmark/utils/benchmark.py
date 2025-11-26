@@ -3,6 +3,7 @@ import time
 import statistics
 
 import tracemalloc
+from benchmark.methods.BMSSP import BMSSP
 from typing import Dict, Any, List, Optional
 from benchmark.methods.dijkstra import Dijkstra
 from benchmark.datastructures.graph import Graph
@@ -16,7 +17,7 @@ class ShortestPathBenchmark:
     It receives:
       - a Graph object (already constructed)
       - a start node (int)
-      - algorithms = ["dijkstra", "bellmanford"]
+      - algorithms = ["dijkstra", "bellmanford", "bmssp"]
 
     Metrics tracked:
       - run_ns / run_sec
@@ -41,6 +42,7 @@ class ShortestPathBenchmark:
         available_algos = {
             "dijkstra": Dijkstra,
             "bellmanford": BellmanFord,
+            "bmssp": BMSSP,
         }
 
         if algorithms is None:

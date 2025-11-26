@@ -34,7 +34,18 @@ class BMSSP(BaseShortestPath):
         return True
     
     def setup(self) -> bool:
-        return
+        for v in range(self.graph.node_count):
+            # ensure every node has an entry even if isolated
+            self.dist[v] = float('inf')
+            self.pred[v] = None
+
+        if self.source >= self.graph.node_count:
+            self.graph.node_count = max(self.graph.node_count, self.source + 1)
+            self.dist[self.source] = 0.0
+            self.pred[self.source] = -1
+        else:
+            self.dist[self.source] = 0.0
+            self.pred[self.source] = -1
 
     def run(self) -> bool:
         if not self.validate():

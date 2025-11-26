@@ -1,5 +1,6 @@
 import time
 from typing import Dict, List, Optional, Type
+from benchmark.methods.BMSSP import BMSSP
 from benchmark.methods.dijkstra import Dijkstra
 from benchmark.datastructures.graph import Graph
 from benchmark.methods.bellman_ford import BellmanFord
@@ -29,7 +30,7 @@ class PathResult:
 
         path = []
         current = end
-        while current is not None:
+        while current is not None and current != -1:
             path.append(current)
             current = self.previous.get(current)
 
@@ -86,3 +87,6 @@ def dijkstra(graph: Graph, start: int) -> PathResult:
 
 def bellman_ford(graph: Graph, start: int) -> PathResult:
     return run_shortest_path_algo(BellmanFord, graph, start, "Bellman-Ford")
+
+def bmssp(graph: Graph, start: int) -> PathResult:
+    return run_shortest_path_algo(BMSSP, graph, start, "BMSSP")

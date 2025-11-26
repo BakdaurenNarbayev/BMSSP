@@ -3,6 +3,7 @@ demo_conf:
   algos_to_test:
   - dijkstra
   - bellmanford
+  - bmssp
   save_result_path: results
 custom_dataset_run: false
 custom_dataset_conf:
@@ -11,6 +12,7 @@ custom_dataset_conf:
   algos_to_test:
   - dijkstra
   - bellmanford
+  - bmssp
   save_result_path: results
 scaling_benchmark_run: true
 scaling_benchmark_conf:
@@ -26,7 +28,9 @@ scaling_benchmark_conf:
   algos_to_test:
   - dijkstra
   - bellmanford
+  - bmssp
   exclude_algos_above:
+  - ["bmssp", 1e3]
   - ["bellmanford", 1e4]
   seed: 42
   num_trials: 3

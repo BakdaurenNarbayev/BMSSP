@@ -10,7 +10,7 @@ from widgets import StatsDisplay
 from visualizer import GraphVisualizer
 from benchmark.main import run_benchmark
 from textual.app import App, ComposeResult
-from graph_algorithms import dijkstra, bellman_ford
+from graph_algorithms import bmssp, dijkstra, bellman_ford
 from sample_graphs import GRAPH_SIZES, create_sample_graphs
 from textual.widgets import Header, Footer, Button, Select, Label, Static
 from textual.containers import Container, Horizontal, Vertical, ScrollableContainer
@@ -104,7 +104,7 @@ class PathfindingTUI(App):
                 yield Label("Graph:")
                 yield Select(
                     options=[
-                        ((f"{msg} ({nodes}x{nodes} DAG)", key))
+                        ((f"{msg} ({nodes} nodes)", key))
                         for key, (nodes, msg) in GRAPH_SIZES.items()
                     ],
                     id="graph-select",
@@ -115,6 +115,7 @@ class PathfindingTUI(App):
                     options=[
                         ("Dijkstra's Algorithm", "dijkstra"),
                         ("Bellman-Ford Algorithm", "bellman_ford"),
+                        ("BMSSP", "bmssp"),
                     ],
                     id="algo-select",
                     value="dijkstra",
@@ -210,15 +211,22 @@ class PathfindingTUI(App):
         algo_select = self.query_one("#algo-select", Select)
         algorithm = algo_select.value
         start, end, description = self.current_graph_info
-        algo_name = "Dijkstra's" if algorithm == "dijkstra" else "Bellman-Ford"
+
+        algo_name = "Dijkstra's"
+        if algorithm == "bellman_ford":
+            algo_name = "Bellman-Ford"
+        elif algorithm == "bmssp":
+            algo_name = "BMSSP"
 
         self.update_status(f"Running {algo_name} on {description}...")
 
         try:
             if algorithm == "dijkstra":
                 result = dijkstra(self.current_graph, start)
-            else:
+            elif algorithm == "bellman_ford":
                 result = bellman_ford(self.current_graph, start)
+            else:
+                result = bmssp(self.current_graph, start)
 
             display = self.query_one("#graph-display", GraphVisualizer)
             display.set_result(result, start, end, self.seed)

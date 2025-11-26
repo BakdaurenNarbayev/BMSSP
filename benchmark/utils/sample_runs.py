@@ -125,7 +125,7 @@ def demo_run(
     print("\nGenerating plots...")
     if save_result_path is not None:
         file_path_json, file_path_pdf = get_file_paths_to_save(save_result_path)
-        plot_results(results, node_sizes, edge_ratios, file_path_pdf)
+        plot_results(results, node_sizes, edge_ratios, save_path=file_path_pdf)
         save_benchmark_results_json(file_path_json, results, node_sizes, edge_ratios)
         return file_path_json, file_path_pdf
     else:
@@ -160,7 +160,7 @@ def run_custom_graph(
     print("\nGenerating plots...")
     if save_result_path is not None:
         file_path_json, file_path_pdf = get_file_paths_to_save(save_result_path)
-        plot_results(results, node_sizes, edge_ratios, file_path_pdf)
+        plot_results(results, node_sizes, edge_ratios, save_path=file_path_pdf)
         save_benchmark_results_json(
             file_path_json, results, node_sizes, edge_ratios, meta
         )

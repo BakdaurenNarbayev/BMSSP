@@ -1,4 +1,4 @@
-from utils.MedianFinder import MedianFinder
+from BMSSP_algorithm.utils.MedianFinder import MedianFinder
 
 class BNode:
     def __init__(self, key, val):
@@ -42,6 +42,11 @@ class Block:
     def delete(self, node):
         """Delete a node by reference."""
         if self.head is None or node is None:
+            return
+        
+        # If node is not currently linked into this block, ignore it
+        # (e.g., node never inserted or already removed)
+        if node.next is None or node.prev is None:
             return
 
         # If only one node
@@ -121,6 +126,39 @@ class Block:
                 break
 
         return MedianFinder.find_median(values)
+    
+    def find_median_index(self):
+        if self.is_empty():
+            return None
+
+        # Gather all values from the circular linked list
+        values = []
+        current = self.head
+        while True:
+            values.append(current.key)
+            current = current.next
+            if current == self.head:
+                break
+
+        return MedianFinder.find_median(values)
+    
+    def find_candidate_index(self):
+        if self.is_empty():
+            return None
+        
+        candidate = self.get_min()
+
+        # Gather all values from the circular linked list
+        values = []
+        current = self.head
+        while True:
+            if current.val == candidate:
+                values.append(current.key)
+            current = current.next
+            if current == self.head:
+                break
+
+        return min(values)
     
     def iterate(self):
         """Iterate through all nodes in a circular block."""

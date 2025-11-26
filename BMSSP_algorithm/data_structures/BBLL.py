@@ -1,33 +1,52 @@
-from Block import Block
-from RBT import RedBlackTree
-from utils.MedianFinder import MedianFinder
-import random
+from BMSSP_algorithm.data_structures.Block import Block, BNode
+from BMSSP_algorithm.data_structures.RBT import RedBlackTree
+from BMSSP_algorithm.utils.MedianFinder import MedianFinder
+import random, math
 
 # Block-Based Linked List (BBLL)
 class BBLL:
-    def __init__(self, M, B, nodes):
+    def __init__(self, M, B, N):
+        # Redefine max bound
+        self.B = B
+
         # D0: for batch prepends
         self.D0 = {}
         self.D0_bounds = RedBlackTree()
 
         # D1: maintains elements from insert operations
-        self.B = B
-        self.D1 = {B: Block()}
+        self.D1 = {self.B: Block()}
         
         # RB tree maintains upper bounds for D1
         self.D1_bounds = RedBlackTree()
-        self.D1_bounds.insert(B)
+        self.D1_bounds.insert(self.B)
 
         self.M = M  # maximum block size
-        self.nodes = nodes  # reference to BMSSP nodes
+        self.nodes = [BNode(v, float('inf')) for v in range(N)]
+
+        #print("NEW D")
+        #print(B)
+        #print(self.B)
+        #self.traverse()
 
     def delete(self, key, val):
         """Delete key/value pair."""
+        #print("DELETE FROM D")
+        #print(f"key = {key}, val = {val}")
+        #print(self.D0_bounds._inorder_traversal_values())
+        #self.traverse()
+
         D0_max_bound_node = self.D0_bounds._find_max(self.D0_bounds.root)
         if D0_max_bound_node is not None and val < D0_max_bound_node.value:
             bound = self.D0_bounds.search_bound(val)
-            if bound not in self.D0:
+            if bound is None:
+                bound = D0_max_bound_node.value
+                
+            if bound is None or bound not in self.D0:
+                self.D0_bounds._inorder_traversal_values()
+                #self.traverse()
                 print(f"[Warning] D0: bound {bound} not found for value {val}.")
+                #print(self.D0_bounds._inorder_traversal_values())
+                #self.traverse()
                 return
 
             block = self.D0[bound]
@@ -38,12 +57,21 @@ class BBLL:
             if block.is_empty():
                 del self.D0[bound]
                 self.D0_bounds.delete(bound)
+
+            #print(self.D0_bounds._inorder_traversal_values())
+            #self.traverse()
             return
 
         # pair is in D1
         bound = self.D1_bounds.search_bound(val)
-        if bound not in self.D1:
+        if bound is None:
+            max_node = self.D1_bounds._find_max(self.D1_bounds.root)
+            bound = max_node.value if max_node is not None else None
+
+        if bound is None or bound not in self.D1:
             print(f"[Warning] D1: bound {bound} not found for value {val}.")
+            #print(self.D0_bounds._inorder_traversal_values())
+            #self.traverse()
             return
 
         block = self.D1[bound]
@@ -55,30 +83,57 @@ class BBLL:
             del self.D1[bound]
             self.D1_bounds.delete(bound)
 
+        #print(self.D0_bounds._inorder_traversal_values())
+        #self.traverse()
+
     def insert(self, key, new_val):
         """Insert or update a key/value pair."""
         node = self.nodes[key]
+        old_val = node.val
 
-        if new_val >= node.val:
-            return # no need to insert if value not improved
+        #print("INSERT TO D")
+        #print(f"key = {key}, new_val = {new_val}, old_val = {old_val}")
+        #print(self.D0_bounds._inorder_traversal_values())
+        #self.traverse()
+
+        # Only improve
+        if new_val >= old_val:
+            #print(self.D0_bounds._inorder_traversal_values())
+            #self.traverse()
+            return
 
         # Remove from old block if present
         if node.next is not None:
-            self.delete(key, node.val)
+            self.delete(key, old_val)
 
+        # Now update to the new, improved value
+        node.val = new_val
+
+        # Find appropriate bound; if no bound > new_val, use the max bound
         bound = self.D1_bounds.search_bound(new_val)
+        if bound is None:
+            max_node = self.D1_bounds._find_max(self.D1_bounds.root)
+            bound = max_node.value if max_node is not None else self.B
+
         block = self.D1[bound]
         block.insert(node)
-        node.val = new_val
 
         if block.get_size() > self.M:
             self.split(block, bound)
+
+        #print(self.D0_bounds._inorder_traversal_values())
+        #self.traverse()
 
     def split(self, block, old_bound):
         """
         Split a block into two when its size exceeds M.
         Uses the Block.find_median() function (O(M) expected time).
         """
+        #print("SPLIT IN D")
+        #print(f"block = {block}, old_bound = {old_bound}")
+        #print(self.D0_bounds._inorder_traversal_values())
+        #self.traverse()
+
         if block.is_empty():
             return
 
@@ -105,7 +160,8 @@ class BBLL:
         # Step 3: Update D1 and bounds
         # Remove old bound from D1 and RedBlackTree
         del self.D1[old_bound]
-        self.D1_bounds.delete(old_bound)
+        if old_bound != self.B:
+            self.D1_bounds.delete(old_bound)
 
         # Define new bounds for the split blocks
         left_bound = median_value
@@ -113,9 +169,13 @@ class BBLL:
 
         # Step 4: Insert new bounds and blocks
         self.D1_bounds.insert(left_bound)
-        self.D1_bounds.insert(right_bound)
+        if old_bound != self.B:
+            self.D1_bounds.insert(right_bound)
         self.D1[left_bound] = left_block
         self.D1[right_bound] = right_block
+
+        #print(self.D0_bounds._inorder_traversal_values())
+        #self.traverse()
 
     def batch_prepend(self, L):
         """
@@ -125,15 +185,28 @@ class BBLL:
         each with ≤ ceil(M/2) elements.
         Time: O(L log(L/M)).
         """
+        #print("BATCH_PREPEND IN D")
+        #print(f"L = {L}")
+        #print(self.D0_bounds._inorder_traversal_values())
+        #self.traverse()
+        
         n = len(L)
         if n == 0:
+            #print(self.D0_bounds._inorder_traversal_values())
+            #self.traverse()
             return
+        
+        L_nodes = list()
+        for (v, d_v) in L:
+            self.nodes[v].val = d_v
+            L_nodes.append(self.nodes[v])
 
         def recursive_partition(nodes):
             """Recursively partition arr into blocks of size ≤ ceil(M/2)."""
             if len(nodes) <= self.M:
+                sorted_nodes = sorted(nodes, key=lambda node: node.val)
                 block = Block()
-                for node in nodes:
+                for node in sorted_nodes:
                     block.insert(node)
                 return [block]
 
@@ -146,7 +219,7 @@ class BBLL:
             return recursive_partition(left) + recursive_partition(right)
 
         # Step 1: Split L into multiple blocks
-        blocks = recursive_partition(L)
+        blocks = recursive_partition(L_nodes)
 
         # Step 2: Prepend blocks to D0
         # Each block gets an upper bound equal to min value of the next block
@@ -159,16 +232,23 @@ class BBLL:
             self.D0[bound] = blocks[i]
             self.D0_bounds.insert(bound)
 
+        #print(self.D0_bounds._inorder_traversal_values())
+        #self.traverse()
+
     def pull(self):
         """
         Pull: Retrieve the smallest M values from D0 ∪ D1.
 
         Returns:
-            S_prime : list of (key, val) pairs – the smallest M elements
+            S_prime : set of (key, val) pairs – the smallest M elements
             x       : smallest remaining value in D0 ∪ D1 after deletion
         """
-
         M = self.M
+
+        #print("PULL FROM D")
+        #print(f"M = {M}")
+        #print(self.D0_bounds._inorder_traversal_values())
+        #self.traverse()
 
         # -------------------------------
         # Step 1: Collect prefix blocks: S′0 from D0, S′1 from D1
@@ -182,12 +262,15 @@ class BBLL:
         # -------------------------------
         # Case 1: If all elements collected ≤ M → return all of them
         # -------------------------------
-        if total <= M:
+        if total < M:
             # delete all collected elements
             for key, val in S_all:
                 self.delete(key, val)
 
-            return S_all, self.B
+            S_set = {key for (key, val) in S_all}
+            #print(self.D0_bounds._inorder_traversal_values())
+            #self.traverse()
+            return S_set, self.B
 
         # -------------------------------
         # Case 2: Need exactly M smallest values from S_all
@@ -231,13 +314,18 @@ class BBLL:
         # -------------------------------
         for key, val in S_prime:
             self.delete(key, val)
+
+        S_set = {key for (key, val) in S_prime}
+
+        #print(self.D0_bounds._inorder_traversal_values())
+        #self.traverse()
   
-        return S_prime, self.find_global_min()
+        return S_set, self.find_global_min()
     
     def collect_from_D0(self, M):
         """Collect up to M values from prefix blocks in D0."""
         result = []
-        inorder_bounds = self.D0_bounds._inorder_traversal_values(self.D0_bounds.root, [])
+        inorder_bounds = self.D0_bounds._inorder_traversal_values()
 
         for bound in inorder_bounds:
             block = self.D0[bound]
@@ -250,7 +338,7 @@ class BBLL:
     def collect_from_D1(self, M):
         """Collect up to M values from prefix blocks in D1."""
         result = []
-        inorder_bounds = self.D1_bounds._inorder_traversal_values(self.D1_bounds.root, [])
+        inorder_bounds = self.D1_bounds._inorder_traversal_values()
 
         for bound in inorder_bounds:
             block = self.D1[bound]
@@ -262,104 +350,101 @@ class BBLL:
     
     def find_global_min(self):
         """Return the smallest value in D0 ∪ D1 in O(M) time."""
-        if self.D0_bounds.root == None:
-            D1_min_bound = self.D1_bounds._find_min(self.D1_bounds.root).value
-            return self.D1[D1_min_bound].get_min()
-        else:
-            D0_min_bound = self.D0_bounds._find_min(self.D0_bounds.root).value
-            if D0_min_bound == self.B and self.D0[D0_min_bound].is_empty():
-                return self.B
-            return self.D0[D0_min_bound].get_min()
+        #print(self.D0_bounds._inorder_traversal_values())
+        #self.traverse()
+        candidate = self.B
+
+        # Check D0's smallest bound
+        if self.D0_bounds.root is not None:
+            min_bound_node = self.D0_bounds._find_min(self.D0_bounds.root)
+            if min_bound_node is not None:
+                #print(self.D0_bounds._inorder_traversal_values())
+                #self.traverse()
+                block = self.D0[min_bound_node.value]
+                if not block.is_empty():
+                    potential = block.get_min()
+                    if potential < candidate:
+                        candidate = potential
+
+        # Check D1's smallest bound
+        if self.D1_bounds.root is not None:
+            min_bound_node = self.D1_bounds._find_min(self.D1_bounds.root)
+            if min_bound_node is not None:
+                block = self.D1[min_bound_node.value]
+                if not block.is_empty():
+                    potential = block.get_min()
+                    if potential < candidate:
+                        candidate = potential
+
+        #print(self.D0_bounds._inorder_traversal_values())
+        #self.traverse()
+        return candidate
 
     def traverse(self):
-        """Traverse D0 then D1."""
-        if not self.D0:
-            D0_bounds = []
-            num_D0_blocks = 0
+        """Pretty-#print the structure of D0 and D1 in a clean, readable format."""
+
+        def format_block(block):
+            if block is None or block.is_empty():
+                return "[]"
+            vals = []
+            for n in block.iterate():
+                vals.append(f"{n.key}:{n.val}")
+            return "[" + ", ".join(vals) + "]"
+
+        print("\n=== BBLL Structure ===")
+
+        # ---- D0 ----
+        print("D0:")
+        print(self.D0_bounds._inorder_traversal_values())
+        if self.D0_bounds.is_empty():
+            print("  (empty)")
         else:
-            D0_bounds = self.D0_bounds._inorder_traversal_values(self.D0_bounds.root, [])
-            num_D0_blocks = len(D0_bounds)
+            bounds = self.D0_bounds._inorder_traversal_values()
+            for b in bounds:
+                blk = self.D0[b]
+                print(f"  bound {b}: {format_block(blk)}")
 
-        if not self.D1:
-            D1_bounds = []
-            num_D1_blocks = 0
+        # ---- D1 ----
+        print("\nD1:")
+        print(self.D1_bounds._inorder_traversal_values())
+        if self.D1_bounds.is_empty():
+            print("  (empty)  <-- SHOULD NOT HAPPEN (sentinel always exists)")
         else:
-            D1_bounds = self.D1_bounds._inorder_traversal_values(self.D1_bounds.root, [])
-            num_D1_blocks = len(D1_bounds)
-        
-        dots = "." * 8
-        tab = "\t"
+            bounds = self.D1_bounds._inorder_traversal_values()
+            for b in bounds:
+                blk = self.D1[b]
+                print(f"  bound {b}: {format_block(blk)}")
 
-        print()
-        print(tab * num_D0_blocks + "   D0   " + tab * num_D0_blocks + tab + tab * num_D1_blocks + "   D1   " + tab * num_D1_blocks)
-        print(dots * (2 * num_D0_blocks + 1) + "." + tab + dots * (2 * num_D1_blocks + 1) + ".")
-        
-        bounds_line = "."
-        for bound in D0_bounds:
-            bounds_line += tab + "Bound: " + str(bound)
-        bounds_line += tab + "." + tab + "."
-        for bound in D1_bounds:
-            bounds_line += tab + "Bound: " + str(bound)
-        bounds_line += tab + "."
-        print(bounds_line)
+        print("======================\n")
 
-        print("." + tab * (2 * num_D0_blocks + 1) + "." + tab + "." + tab * (2 * num_D1_blocks + 1) + ".")
+    def is_empty(self):
+        if not self.D0_bounds.is_empty():
+            return False
 
-        D0_map = {}
-        for bound in D0_bounds:
-            D0_map[bound] = list()
-            block = self.D0[bound]
-            current = block.head
-            while current != None:
-                D0_map[bound].append(f"<{current.key}, {current.val}>")
-                current = current.next
-                if current == block.head:
-                    break
-            D0_map[bound].append("(head)")
+        # D1 should contain exactly 1 bound (sentinel B)
+        # If it has more than 1, D is not empty
+        if self.D1_bounds.get_size() > 1:
+            return False
 
-        D1_map = {}
-        for bound in D1_bounds:
-            D1_map[bound] = list()
-            block = self.D1[bound]
-            current = block.head
-            while current != None:
-                D1_map[bound].append(f"<{current.key}, {current.val}>")
-                current = current.next
-                if current == block.head:
-                    break
-            D1_map[bound].append("(head)")
+        # Check sentinel block is empty
+        sentinel_block = self.D1[self.B]
+        return sentinel_block.is_empty()
+    
+    def _check_invariants(self):
+        # D0: bounds in tree == keys in dict
+        d0_tree = set(self.D0_bounds._inorder_traversal_values()) \
+                if not self.D0_bounds.is_empty() else set()
+        d0_dict = set(self.D0.keys())
 
-        for i in range(self.M + 1):
-            nodes_line = "."
-            arrows_line = "."
-            for bound in D0_bounds:
-                block_nodes = D0_map[bound]
-                if i < len(block_nodes):
-                    nodes_line += tab + block_nodes[i] + tab
-                    if block_nodes[i] != "(head)":
-                        arrows_line += tab + "   |" + tab
-                    else:
-                        arrows_line += tab + tab
-                else:
-                    nodes_line += tab + tab
-                    arrows_line += tab + tab
-            nodes_line += tab + "." + tab + "."
-            arrows_line += tab + "." + tab + "."
-            for bound in D1_bounds:
-                block_nodes = D1_map[bound]
-                if i < len(block_nodes):
-                    nodes_line += tab + block_nodes[i] + tab
-                    if block_nodes[i] != "(head)":
-                        arrows_line += tab + "   |" + tab
-                    else:
-                        arrows_line += tab + tab
-                else:
-                    nodes_line += tab + tab
-                    arrows_line += tab + tab
-            nodes_line += tab + "."
-            arrows_line += tab + "."
-            print(nodes_line)
-            print(arrows_line)
+        assert d0_tree == d0_dict, f"D0 mismatch: tree={d0_tree}, dict={d0_dict}"
 
-        print(dots * (2 * num_D0_blocks + 1) + "." + tab + dots * (2 * num_D1_blocks + 1) + ".")
-        print()
+        # D1: tree bounds == dict keys AND sentinel B must exist in both
+        d1_tree = set(self.D1_bounds._inorder_traversal_values())
+        d1_dict = set(self.D1.keys())
+
+        #print(self.B)
+        #print(d1_tree)
+        #print(d1_dict)
+        assert self.B in d1_tree and self.B in d1_dict, "Sentinel B missing"
+        assert d1_tree == d1_dict, f"D1 mismatch: tree={d1_tree}, dict={d1_dict}"
+

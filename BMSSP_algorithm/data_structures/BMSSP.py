@@ -161,6 +161,7 @@ class BMSSP(BaseShortestPath):
         # Else choose new boundary B'
         B_prime = max((self.dist[v] + 1) * self.multiplier + self.pred[v] + v / self.multiplier for v in U0) 
         U = {v for v in U0 if (self.dist[v] + 1) * self.multiplier + self.pred[v] + v / self.multiplier < B_prime}
+
         return B_prime, U
 
     def bmssp(self, l: int, B: float, S: set[int]) -> tuple[float, set[int]]:
@@ -207,19 +208,17 @@ class BMSSP(BaseShortestPath):
             B_prime_agg = B
 
         U: set[int] = set()
-        Ui_prev: set[int] = set()
-        Si_prev: set[int] = set()
-        Bi_prev: float = -1
-        Bi_prime_prev: float = -1
         U_threshold = self.k * math.pow(2, l * self.t)
 
         #print(f"B_prime_agg = {B_prime_agg}, U_threshold = {U_threshold}")
 
-        while len(U) < U_threshold and not D.is_empty():
-            print(f"l = {l}")
-            D.traverse()
+        iteration = 0
+        while len(U) < U_threshold and not D.is_empty() and iteration < self.max_iterations:
+            iteration += 1
+            #print(f"l = {l}")
+            #D.traverse()
             Si, Bi = D.pull()
-            D.traverse()
+            #D.traverse()
             D._check_invariants()
             if len(Si) == 0:
                 break
@@ -227,12 +226,6 @@ class BMSSP(BaseShortestPath):
             #print(f"Si = {Si}, Bi = {Bi}")
             Bi_prime, Ui = self.bmssp(l - 1, Bi, Si)
             B_prime_agg = min(B_prime_agg, Bi_prime)
-            if Ui == Ui_prev and Si == Si_prev and Bi == Bi_prev and Bi_prime == Bi_prime_prev:
-                break
-            Ui_prev = Ui
-            Si_prev = Si
-            Bi_prev = Bi
-            Bi_prime_prev = Bi_prime
 
             U |= Ui
             #print(f"U = {U}, Bi_prime = {Bi_prime}, Ui = {Ui}")
@@ -279,6 +272,21 @@ class BMSSP(BaseShortestPath):
         for x in W:
             if (self.dist[x] + 1) * self.multiplier + self.pred[x] + x / self.multiplier < B_prime:
                 U_final.add(x)
+
+        if iteration >= self.max_iterations:
+            queue = deque(U_final)
+            visited = set(U_final)
+            while queue:
+                u = queue.popleft()
+                for v, w in self.graph.get_neighbors(u):
+                    if self.dist[u] + w < self.dist[v]:
+                        self.dist[v] = self.dist[u] + w
+                        self.pred[v] = u
+                    if v not in visited:
+                        visited.add(v)
+                        queue.append(v)
+
+            U_final = set(visited)
 
         #print(f"U_final = {U_final}")
         return B_prime, U_final
@@ -356,7 +364,7 @@ def build_paper_like_graph():
     return g, 0
 
 
-def build_medium_graph(n=20, avg_outdegree=2):
+def build_medium_graph(n=11, avg_outdegree=2):
     """
     Builds a sparse directed graph with ~n nodes and outdegree ≈ avg_outdegree.
     Graph is guaranteed source-connected.

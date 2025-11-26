@@ -395,6 +395,7 @@ class BBLL:
 
         # ---- D0 ----
         print("D0:")
+        print(self.D0_bounds._inorder_traversal_values())
         if self.D0_bounds.is_empty():
             print("  (empty)")
         else:
@@ -405,6 +406,7 @@ class BBLL:
 
         # ---- D1 ----
         print("\nD1:")
+        print(self.D1_bounds._inorder_traversal_values())
         if self.D1_bounds.is_empty():
             print("  (empty)  <-- SHOULD NOT HAPPEN (sentinel always exists)")
         else:

@@ -50,7 +50,7 @@ def plot_results(
     linestyles = ["-", "--", ":"]
     edge_styles = [(m, ls) for m in markers for ls in linestyles]
     
-    gray_shades = ["#6a6a6a", "#8a8a8a"]
+    gray_shades = ["#514f4f", "#8a8a8a"]
     for idx, metric in enumerate(metrics):
         ax = axes[idx]
         label = metric_titles[idx]
@@ -86,7 +86,7 @@ def plot_results(
                     # Check if this data is incomplete (shorter than max)
                     has_missing = len(vals) < max_len
                     
-                    if has_missing and len(vals) >= 2 and (alg != "bmssp" and metric != "peak_memory_median"):
+                    if has_missing and len(vals) >= 2 and (alg != "bmssp" or metric != "peak_memory_median"):
                         # Use available data points
                         valid_x = node_sizes[:len(vals)]
                         valid_y = vals

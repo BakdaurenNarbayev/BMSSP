@@ -1,5 +1,5 @@
 import pytest
-from BMSSP_algorithm.utils.MedianFinder import MedianFinder
+from benchmark.methods.BMSSP_utils.utils.MedianFinder import MedianFinder
 
 def test_single_element():
     assert MedianFinder.find_median([5]) == 5

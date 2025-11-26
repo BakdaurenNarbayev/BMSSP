@@ -1,8 +1,8 @@
 import math
 import pytest
 
-from BMSSP_algorithm.graph import Graph
-from BMSSP_algorithm.data_structures.BMSSP import BMSSP
+from benchmark.datastructures.graph import Graph
+from benchmark.methods.BMSSP import BMSSP
 
 
 # ---------------------------------------------------------

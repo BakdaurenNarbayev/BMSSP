@@ -1,6 +1,6 @@
-from BMSSP_algorithm.data_structures.Block import Block, BNode
-from BMSSP_algorithm.data_structures.RBT import RedBlackTree
-from BMSSP_algorithm.utils.MedianFinder import MedianFinder
+from benchmark.methods.BMSSP_utils.data_structures.Block import Block, BNode
+from benchmark.methods.BMSSP_utils.data_structures.RBT import RedBlackTree
+from benchmark.methods.BMSSP_utils.utils.MedianFinder import MedianFinder
 import random, math
 
 # Block-Based Linked List (BBLL)

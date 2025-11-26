@@ -1,4 +1,4 @@
-from BMSSP_algorithm.utils.MedianFinder import MedianFinder
+from benchmark.methods.BMSSP_utils.utils.MedianFinder import MedianFinder
 
 class BNode:
     def __init__(self, key, val):

@@ -1,5 +1,5 @@
 import pytest
-from BMSSP_algorithm.data_structures.BBLL import BBLL
+from benchmark.methods.BMSSP_utils.data_structures.BBLL import BBLL
 
 # ----------------------------------------------------------------------
 # Helpers

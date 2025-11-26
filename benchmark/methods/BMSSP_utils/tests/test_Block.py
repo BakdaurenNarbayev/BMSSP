@@ -1,6 +1,6 @@
 import pytest
-from BMSSP_algorithm.data_structures.Block import Block, BNode
-from BMSSP_algorithm.utils.MedianFinder import MedianFinder
+from benchmark.methods.BMSSP_utils.data_structures.Block import Block, BNode
+from benchmark.methods.BMSSP_utils.utils.MedianFinder import MedianFinder
 
 
 # ---------------------------

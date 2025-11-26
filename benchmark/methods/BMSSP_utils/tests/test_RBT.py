@@ -1,5 +1,5 @@
 import pytest
-from BMSSP_algorithm.data_structures.RBT import RedBlackTree, RBNode
+from benchmark.methods.BMSSP_utils.data_structures.RBT import RedBlackTree, RBNode
 
 
 # ---------------------------

@@ -1,6 +1,6 @@
 from collections import defaultdict
 from typing import Dict, List, Tuple
-from BMSSP_algorithm.graph import Graph
+from benchmark.datastructures.graph import Graph
 
 
 def transform_to_constant_degree(G: Graph) -> Tuple[Graph, Dict[Tuple[int, str, int], int]]:

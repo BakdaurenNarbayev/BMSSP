@@ -2,9 +2,9 @@ import math
 import heapq
 from collections import deque
 from typing import List, Tuple
-from BMSSP_algorithm.base import BaseShortestPath
-from BMSSP_algorithm.graph import Graph
-from BMSSP_algorithm.data_structures.BBLL import BBLL
+from benchmark.methods.base import BaseShortestPath
+from benchmark.datastructures.graph import Graph
+from benchmark.methods.BMSSP_utils.data_structures.BBLL import BBLL
 
 class BMSSP(BaseShortestPath):
     def __init__(self, graph: Graph, source: int):
@@ -32,6 +32,9 @@ class BMSSP(BaseShortestPath):
 
     def validate(self) -> bool:
         return True
+    
+    def setup(self) -> bool:
+        return
 
     def run(self) -> bool:
         if not self.validate():
